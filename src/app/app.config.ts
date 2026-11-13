@@ -1,6 +1,5 @@
 import { ApplicationConfig, provideAppInitializer, inject,  provideZoneChangeDetection } from "@angular/core";
 import { provideRouter, withInMemoryScrolling } from "@angular/router";
-import { provideAuth0 } from "@auth0/auth0-angular";
 import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getFirestore, provideFirestore } from '@angular/fire/firestore';
 import { routes } from "./app.routes";
@@ -34,13 +33,6 @@ export const appConfig: ApplicationConfig = {
                 useFactory: httpLoaderFactory,
                 deps: [HttpClient]
             }
-        }),
-        provideAuth0({
-            domain: environment.auth0.domain,
-            clientId: environment.auth0.clientId,
-            authorizationParams: {
-                redirect_uri: window.location.origin
-            },
         }),
         provideFirebaseApp(() => initializeApp(resolveFirebaseConfig((environment as any).fbPayload ?? (environment as any).firebase))),
         provideAuth(() => getAuth()),

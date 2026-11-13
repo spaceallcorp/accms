@@ -1,40 +1,201 @@
-<div class="uk-container" style="margin-top: 70px; margin-bottom: 70px;">
+@if (cmsMode) {
+  <!-- ==================== MODO CMS (Compacto, Filtrado pela Operação e Paginado) ==================== -->
   @if (posts$ | async; as posts) {
-  <div class="uk-grid uk-child-width-1-3@m uk-grid-medium" uk-grid>
-    @for (post of posts; track post.id) {
-    <div>
-      <div class="uk-card  uk-card-small uk-border-rounded">
-
-        <!-- Featured Image -->
-        <div *ngIf="post.imageUrl" class="uk-card-media-top">
-          <img [src]="post.imageUrl" class="" alt="Imagem de destaque" style="border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; border-top-left-radius: 20px; border-top-right-radius: 20px; height: auto; object-fit: cover; width: 100%;" />
+    <div class="cms-list-card">
+      <div class="cms-list-header">
+        <div class="cms-list-title-group">
+          <span class="cms-form-icon-box" aria-hidden="true">
+            <svg class="cms-title-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+          </span>
+          <div>
+            <div class="cms-list-heading-row">
+              <h3 class="cms-list-title">Artigos</h3>
+              <span class="cms-count-pill">{{ posts.length }}</span>
+            </div>
+            <p class="cms-form-subtitle">Filtrados pela operação seleccionada</p>
+          </div>
         </div>
-       
-        <div class="uk-card-header">
-           <p class="uk-text-meta" style="font-size: 0.9rem; margin-bottom: 5px;">
-          {{ post.createdAt?.toDate() | date: 'dd/MM/yyyy' }}
-        </p>
-          <a style="color: #1A1A1A;" [routerLink]="['/artigo', post.id]">
-            <p style="font-size: 1.3rem; font-weight: 500;" class="uk-card-title uk-text-left">{{ post.title }}</p>
-          </a>
-        </div>
-        <!-- 
-        <div class="uk-card-body">
-          <div *ngIf="post.content" [innerHTML]="post.content | truncate:150"></div>
-        </div>
-       
 
-        <div class="uk-card-footer uk-flex uk-flex-between uk-flex-middle">
-          <a [routerLink]="['/artigo', post.id]" class="uk-button uk-button-text">Ler mais</a>
-        </div> -->
+        <div class="cms-op-destination-pill" title="Operação activa">
+          <img [src]="cmsSiteService.activeSiteConfig().logoSvg" [alt]="cmsSiteService.activeSiteConfig().name" class="cms-op-destination-logo" />
+          <code class="cms-op-destination-code">{{ selectedCollection }}</code>
+        </div>
+      </div>
 
+      @if (posts.length > 0) {
+        <div class="cms-list-toolbar">
+          <div class="cms-search-box">
+            <span class="cms-search-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              class="cms-search-input"
+              placeholder="Filtrar artigos por título ou autor..."
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="onSearchChange()"
+            />
+            @if (searchQuery) {
+              <button type="button" class="cms-search-clear" (click)="clearSearch()" title="Limpar filtro">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            }
+          </div>
+        </div>
+
+        @let filtered = filterItems(posts);
+        @let totalPages = getTotalPages(filtered.length);
+        @let pageItems = getPaginatedItems(filtered);
+
+        @if (filtered.length > 0) {
+          <ul class="cms-list-items">
+            @for (post of pageItems; track post.id) {
+              <li class="cms-list-row">
+                <div class="cms-row-main">
+                  <div class="cms-row-thumb">
+                    @if (post.imageUrl) {
+                      <img [src]="post.imageUrl" [alt]="post.title" loading="lazy" />
+                    } @else {
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                    }
+                  </div>
+
+                  <div class="cms-row-info">
+                    <a [routerLink]="['/artigo', post.id]" class="cms-row-title" [title]="post.title">
+                      {{ post.title }}
+                    </a>
+                    <div class="cms-row-meta">
+                      @if (post.author) {
+                        <span class="cms-meta-chip" [title]="post.author">{{ post.author }}</span>
+                      }
+                      @if (post.createdAt?.toDate) {
+                        <span class="cms-meta-chip">{{ post.createdAt.toDate() | date: 'dd/MM/yyyy' }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cms-row-actions">
+                  <a [routerLink]="['/artigo', post.id]" class="cms-action-btn is-view" title="Ver artigo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>Ver</span>
+                  </a>
+                  <button type="button" class="cms-action-btn is-delete" (click)="deletePost(post)" title="Eliminar artigo">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span>Eliminar</span>
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+
+          <div class="cms-pagination-bar">
+            <div class="cms-pagination-info">
+              <span><strong>{{ getRangeStart(filtered.length) }}–{{ getRangeEnd(filtered.length) }}</strong> de <strong>{{ filtered.length }}</strong></span>
+              <select class="cms-pagesize-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()" aria-label="Itens por página">
+                @for (opt of pageSizeOptions; track opt) {
+                  <option [ngValue]="opt">{{ opt }} / pág</option>
+                }
+              </select>
+            </div>
+
+            @if (totalPages > 1) {
+              <nav class="cms-pagination-controls" aria-label="Paginação de artigos">
+                <button type="button" class="cms-page-btn" [disabled]="currentPage <= 1" (click)="goToPage(currentPage - 1, totalPages)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+                @for (page of getPages(totalPages); track page) {
+                  <button type="button" class="cms-page-btn" [class.is-active]="page === currentPage" (click)="goToPage(page, totalPages)">
+                    {{ page }}
+                  </button>
+                }
+                <button type="button" class="cms-page-btn" [disabled]="currentPage >= totalPages" (click)="goToPage(currentPage + 1, totalPages)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </nav>
+            }
+          </div>
+        } @else {
+          <div class="cms-empty-state">
+            <div class="cms-empty-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <h4 class="cms-empty-title">Sem resultados para "{{ searchQuery }}"</h4>
+            <p class="cms-empty-desc">Tente outro termo de pesquisa.</p>
+          </div>
+        }
+      } @else {
+        <div class="cms-empty-state">
+          <div class="cms-empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20h9"/>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+            </svg>
+          </div>
+          <h4 class="cms-empty-title">Sem artigos em {{ selectedCollection }}</h4>
+          <p class="cms-empty-desc">Publique o primeiro artigo para {{ cmsSiteService.activeSiteConfig().name }}.</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="cms-list-card">
+      <div class="cms-empty-state">
+        <div uk-spinner="ratio: 0.9"></div>
       </div>
     </div>
+  }
+} @else {
+  <!-- ==================== MODO PÚBLICO ==================== -->
+  <div class="uk-container" style="margin-top: 70px; margin-bottom: 70px;">
+    @if (posts$ | async; as posts) {
+      <div class="uk-grid uk-child-width-1-3@m uk-grid-medium uk-grid-match" uk-grid>
+        @for (post of posts; track post.id) {
+          <div>
+            <div class="uk-card uk-card-small uk-border-rounded">
+              <div *ngIf="post.imageUrl" class="uk-card-media-top">
+                <img [src]="post.imageUrl" alt="Imagem de destaque" style="border-radius: 16px; height: 180px; object-fit: cover; width: 100%;" />
+              </div>
+              <div class="uk-card-header">
+                <p class="uk-text-meta" style="font-size: 0.85rem; margin-bottom: 5px;">
+                  {{ post.createdAt?.toDate ? (post.createdAt.toDate() | date: 'dd/MM/yyyy') : '' }}
+                </p>
+                <a style="color: #1A1A1A;" [routerLink]="['/artigo', post.id]">
+                  <p style="font-size: 1.1rem; font-weight: 600;" class="uk-card-title uk-text-left" [title]="post.title">{{ post.title }}</p>
+                </a>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="uk-flex uk-flex-center uk-margin-large-top">
+        <div uk-spinner></div>
+      </div>
     }
   </div>
-  } @else {
-  <div class="uk-flex uk-flex-center uk-margin-large-top">
-    <div uk-spinner></div>
-  </div>
-  }
-</div>
+}

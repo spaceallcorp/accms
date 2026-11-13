@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - mvp
+      - main
 
 jobs:
   build-and-deploy:
@@ -98,7 +99,7 @@ jobs:
         env:
           NODE_OPTIONS: "--max_old_space_size=4096"
 
-      - name: 🐛 Verify Build Output & SEO Assets
+      - name: 🐛 Verify Build Output
         run: |
           echo "Build directory contents:"
           ls -la dist/part/browser
@@ -109,54 +110,57 @@ jobs:
             echo "✅ Verified: Firebase apiKey and AIza patterns are completely absent from bundle"
           fi
 
-          echo "🔍 Verifying XML Sitemap & Robots..."
-          test -f dist/part/browser/sitemap.xml || { echo "❌ ERROR: sitemap.xml missing in build output!"; exit 1; }
-          test -s dist/part/browser/sitemap.xml || { echo "❌ ERROR: sitemap.xml is empty!"; exit 1; }
-          echo "✅ sitemap.xml verified ($(wc -c < dist/part/browser/sitemap.xml) bytes)"
+          echo "🔍 Verifying Core Web Assets..."
+          test -f dist/part/browser/index.html || { echo "❌ ERROR: index.html missing in build output!"; exit 1; }
+          echo "✅ index.html verified ($(wc -c < dist/part/browser/index.html) bytes)"
 
-          test -f dist/part/browser/robots.txt || { echo "❌ ERROR: robots.txt missing in build output!"; exit 1; }
-          test -s dist/part/browser/robots.txt || { echo "❌ ERROR: robots.txt is empty!"; exit 1; }
-          echo "✅ robots.txt verified ($(wc -c < dist/part/browser/robots.txt) bytes)"
+          if [ -f dist/part/browser/robots.txt ]; then
+            echo "✅ robots.txt verified ($(wc -c < dist/part/browser/robots.txt) bytes)"
+          fi
 
       - name: 🧹 Secure Clean & Deploy via WebDAV
         env:
           WEBDISK_USERNAME: ${{ secrets.WEBDISK_USERNAME }}
           WEBDISK_PASSWORD: ${{ secrets.WEBDISK_PASSWORD }}
+          WEBDISK_URL: ${{ secrets.WEBDISK_URL }}
         run: |
           # ===== CONFIGURATION =====
           BUILD_DIR="dist/part/browser"
-          WEBDISK_URL="https://angolacables.co.ao:2078"
+          RAW_URL="${WEBDISK_URL}"
+          [ -z "$RAW_URL" ] && RAW_URL="https://marketing.host2africa.com:2078"
+          # Strip trailing slashes
+          TARGET_URL="${RAW_URL%/}"
+
+          RAW_USER="${WEBDISK_USERNAME}"
+          [ -z "$RAW_USER" ] && RAW_USER="cms@marketing.host2africa.com"
+          TARGET_USER="$RAW_USER"
           
-          # Protected items (won't be touched)
+          # Protected items on remote (won't be deleted)
           PROTECTED_ITEMS=(
             "cgi-bin"
             ".well-known"
             ".tmb"
-            "partners.angolacables.co.ao"
-            "old_angolacables.co.ao"
-            "angular.angolacables.co.ao"
-            "old2_angolacables.co.ao"
-            "site_update"
             ".user.ini"
             ".htaccess_bak"
-            "old_angolacables.co.ao.zip"
-            "routes-table"
           )
           # =========================
 
+          echo "🚀 Deploying CMS to: $TARGET_URL"
+          echo "👤 Deploy user: $TARGET_USER"
+
           # 🔐 Verify WebDAV connection
           echo "🔐 Testing WebDAV connection..."
-          if ! curl -u $WEBDISK_USERNAME:$WEBDISK_PASSWORD -X PROPFIND $WEBDISK_URL/ --fail --silent --show-error >/dev/null; then
-            echo "❌ FATAL: WebDAV authentication failed!"
+          if ! curl -u "$TARGET_USER:$WEBDISK_PASSWORD" -X PROPFIND "$TARGET_URL/" --fail --silent --show-error >/dev/null; then
+            echo "❌ FATAL: WebDAV authentication failed for $TARGET_USER at $TARGET_URL!"
             exit 1
           fi
 
           # 🗑️ Get remote items using xmlstarlet
           echo "📡 Fetching remote file list..."
           sudo apt-get update && sudo apt-get install -y xmlstarlet
-          REMOTE_ITEMS=$(curl -u $WEBDISK_USERNAME:$WEBDISK_PASSWORD -X PROPFIND $WEBDISK_URL/ --silent | \
+          REMOTE_ITEMS=$(curl -u "$TARGET_USER:$WEBDISK_PASSWORD" -X PROPFIND "$TARGET_URL/" --silent | \
             xmlstarlet sel -t -v "//a:href" -n | \
-            sed "s|$WEBDISK_URL||" | sed 's|^/||' | grep -v '^$' | sort -ur)
+            sed "s|$TARGET_URL||" | sed 's|^/||' | grep -v '^$' | sort -ur)
 
           # 💣 Delete non-protected items
           echo "🧹 Starting cleanup..."
@@ -170,24 +174,24 @@ jobs:
 
             if ! $protected; then
               echo "🗑️ Deleting: $item"
-              curl -u $WEBDISK_USERNAME:$WEBDISK_PASSWORD -X DELETE "$WEBDISK_URL/$item" --silent --show-error --fail || \
-              curl -u $WEBDISK_USERNAME:$WEBDISK_PASSWORD -X DELETE "$WEBDISK_URL/$item/" --silent --show-error --fail || true
+              curl -u "$TARGET_USER:$WEBDISK_PASSWORD" -X DELETE "$TARGET_URL/$item" --silent --show-error --fail || \
+              curl -u "$TARGET_USER:$WEBDISK_PASSWORD" -X DELETE "$TARGET_URL/$item/" --silent --show-error --fail || true
             else
               echo "🛡️ Preserving: $item"
             fi
           done
 
           # 🚀 Deploy new build
-          echo "🚀 Uploading build..."
+          echo "🚀 Uploading build files..."
           find $BUILD_DIR -type f | while read -r file; do
             remote_path="${file#$BUILD_DIR/}"
             remote_dir=$(dirname "$remote_path")
             
             [[ "$remote_dir" != "." ]] && \
-              curl -u $WEBDISK_USERNAME:$WEBDISK_PASSWORD -X MKCOL "$WEBDISK_URL/$remote_dir" --silent --show-error --fail >/dev/null 2>&1 || true
+              curl -u "$TARGET_USER:$WEBDISK_PASSWORD" -X MKCOL "$TARGET_URL/$remote_dir" --silent --show-error --fail >/dev/null 2>&1 || true
             
             for attempt in {1..3}; do
-              if curl -u $WEBDISK_USERNAME:$WEBDISK_PASSWORD -T "$file" "$WEBDISK_URL/$remote_path" --silent --show-error --fail; then
+              if curl -u "$TARGET_USER:$WEBDISK_PASSWORD" -T "$file" "$TARGET_URL/$remote_path" --silent --show-error --fail; then
                 echo "✅ Uploaded: $remote_path"
                 break
               elif [[ $attempt -eq 3 ]]; then
@@ -200,6 +204,5 @@ jobs:
           done
 
           echo "🎉 Deployment completed successfully!"
-          echo "🌐 Live at: https://angolacables.co.ao"
-          echo "🗺️ Sitemap: https://angolacables.co.ao/sitemap.xml"
-          echo "🤖 Robots: https://angolacables.co.ao/robots.txt"
+          echo "🌐 CMS Server: $TARGET_URL"
+          echo "👤 Deployed as: $TARGET_USER"

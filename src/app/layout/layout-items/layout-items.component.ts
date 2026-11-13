@@ -1,11 +1,15 @@
 // layout-items.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Observable, Subscription } from 'rxjs';
 import { LayoutItemsService } from '../../services/layout-items.service';
+import { CmsSiteService } from '../../services/cms-site.service';
+import { CmsSiteId } from '../../models/cms-site.model';
 import {
   navBarItems,
   footerItems,
+  FOOTER_SECTIONS,
+  FooterSection,
   siteLogos,
   socialMedia,
   addresses,
@@ -20,11 +24,13 @@ import { CommonModule } from '@angular/common';
   templateUrl: './layout-items.component.html',
   styleUrls: ['./layout-items.component.css'],
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule]
+  imports: [ReactiveFormsModule, FormsModule, CommonModule]
 })
 export class LayoutItemsComponent implements OnInit, OnDestroy {
   // Active tab management
   activeTab: string = 'navbar';
+  footerSections = FOOTER_SECTIONS;
+  selectedFooterSectionFilter: string = 'all';
   
   // Observables for each section
   navItems$: Observable<navBarItems[]> = new Observable<navBarItems[]>();
@@ -64,18 +70,19 @@ export class LayoutItemsComponent implements OnInit, OnDestroy {
   // Configuração das Abas (Tabs)
 // Configuração das Abas (Tabs) com os respetivos ícones
   tabs = [
-    { id: 'navbar', label: 'Navbar Items', icon: '📁' },
-    { id: 'footer', label: 'Footer Items', icon: '👣' },
-    { id: 'logos', label: 'Site Logos', icon: '🖼️' },
-    { id: 'social', label: 'Social Media', icon: '🌐' },
-    { id: 'addresses', label: 'Addresses', icon: '📍' },
-    { id: 'partners', label: 'Partners', icon: '🤝' },
-    { id: 'hero', label: 'Hero Slider', icon: '⚡' }
+    { id: 'navbar', label: 'Navbar Items' },
+    { id: 'footer', label: 'Footer Items' },
+    { id: 'logos', label: 'Site Logos' },
+    { id: 'social', label: 'Social Media' },
+    { id: 'addresses', label: 'Addresses' },
+    { id: 'partners', label: 'Partners' },
+    { id: 'hero', label: 'Hero Slider' }
   ];
 
   constructor(
     private fb: FormBuilder,
-    private layoutService: LayoutItemsService
+    private layoutService: LayoutItemsService,
+    public cmsSiteService: CmsSiteService
   ) {
     // Inicialização preventiva básica
     this.createBlankForms();
@@ -85,14 +92,49 @@ export class LayoutItemsComponent implements OnInit, OnDestroy {
     // Inicializa os formulários com as estruturas corretas ANTES de ler dados
     this.initForms();
 
-    // Initialize observables vindos do serviço Firestore
-    this.navItems$ = this.layoutService.getNavBarItems();
-    this.footerItems$ = this.layoutService.getFooterItems();
-    this.siteLogos$ = this.layoutService.getSiteLogos();
-    this.socialMedia$ = this.layoutService.getSocialMedia();
-    this.addresses$ = this.layoutService.getAddresses();
-    this.partners$ = this.layoutService.getPartners();
-    this.heroSlides$ = this.layoutService.getHeroSlides();
+    // Sincroniza dinamicamente as listas com a subsidiária activa
+    this.subscriptions.push(
+      this.cmsSiteService.activeSite$.subscribe((siteId) => {
+        this.loadSiteItems(siteId);
+        this.resetAllForms();
+      })
+    );
+  }
+
+  loadSiteItems(siteId: CmsSiteId): void {
+    this.navItems$ = this.layoutService.getNavBarItems(siteId);
+    this.footerItems$ = this.layoutService.getFooterItems(siteId);
+    this.siteLogos$ = this.layoutService.getSiteLogos(siteId);
+    this.socialMedia$ = this.layoutService.getSocialMedia(siteId);
+    this.addresses$ = this.layoutService.getAddresses(siteId);
+    this.partners$ = this.layoutService.getPartners(siteId);
+    this.heroSlides$ = this.layoutService.getHeroSlides(siteId);
+  }
+
+  onSelectSite(siteId: string): void {
+    this.cmsSiteService.setActiveSite(siteId as CmsSiteId);
+  }
+
+  async seedCurrentSubsidiary(): Promise<void> {
+    const currentSite = this.cmsSiteService.activeSiteConfig();
+    const confirmed = confirm(
+      `Deseja preencher automaticamente os dados institucionais padrão para a subsidiária ${currentSite.name} (${currentSite.regionLabel}) caso as colecções estejam vazias?`
+    );
+    if (!confirmed) return;
+
+    this.loading = true;
+    try {
+      const res = await this.layoutService.seedSubsidiaryDefaults(currentSite.id);
+      if (res.seeded.length > 0) {
+        this.showSuccess(`Dados padrão inicializados com sucesso: ${res.seeded.join(', ')}`);
+      } else {
+        this.showSuccess(`A subsidiária ${currentSite.name} já continha registos em todas as colecções.`);
+      }
+    } catch (err: any) {
+      this.handleError(err);
+    } finally {
+      this.loading = false;
+    }
   }
 
 
@@ -121,8 +163,12 @@ export class LayoutItemsComponent implements OnInit, OnDestroy {
 
     // Footer Form
     this.footerForm = this.fb.group({
+      section: ['useful_links', [Validators.required]],
       title: ['', [Validators.required, Validators.minLength(2)]],
-      link: ['', [Validators.required]]
+      link: [''],
+      translateKey: [''],
+      order: [1, [Validators.required, Validators.min(1)]],
+      targetBlank: [false]
     });
 
     // Site Logos Form
@@ -288,8 +334,43 @@ export class LayoutItemsComponent implements OnInit, OnDestroy {
   // ==================== FOOTER METHODS ====================
   
   resetFooterForm(): void {
-    this.footerForm.reset();
+    this.footerForm.reset({
+      section: 'useful_links',
+      title: '',
+      link: '',
+      translateKey: '',
+      order: 1,
+      targetBlank: false
+    });
     this.editingFooterId = null;
+  }
+
+  getFooterSectionLabel(section?: FooterSection): string {
+    const found = this.footerSections.find(s => s.value === (section || 'useful_links'));
+    return found ? found.label : 'Links Úteis (Useful Links)';
+  }
+
+  filterFooterItems(items: footerItems[] | null): footerItems[] {
+    if (!items) {
+      return [];
+    }
+    if (this.selectedFooterSectionFilter === 'all') {
+      return items;
+    }
+    return items.filter(item => (item.section || 'useful_links') === this.selectedFooterSectionFilter);
+  }
+
+  onSeedDefaultFooterItems(): void {
+    this.loading = true;
+    this.layoutService.seedDefaultFooterItems()
+      .then(() => {
+        this.showSuccess('Default footer items synced to Firestore!');
+        this.loading = false;
+      })
+      .catch(error => {
+        this.handleError(error);
+        this.loading = false;
+      });
   }
 
   onSubmitFooter(): void {
@@ -329,9 +410,17 @@ export class LayoutItemsComponent implements OnInit, OnDestroy {
   editFooterItem(item: footerItems): void {
     this.editingFooterId = item.id;
     this.footerForm.patchValue({
+      section: item.section || 'useful_links',
       title: item.title,
-      link: item.link
+      link: item.link || '',
+      translateKey: item.translateKey || '',
+      order: item.order || 1,
+      targetBlank: !!item.targetBlank
     });
+    const formElement = document.getElementById('footerFormCard');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   deleteFooterItem(id: string): void {

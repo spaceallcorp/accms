@@ -1,27 +1,46 @@
-import { Component, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
 import { VagaService } from '../../services/vaga.service';
 import emailjs, { type EmailJSResponseStatus } from '@emailjs/browser';
-
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Vaga } from '../../models/vagas.models';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { BehaviorSubject, Observable, Subscription, switchMap } from 'rxjs';
+import { VAGA_COLLECTIONS, VagaCollection } from '../../models/cms-site.model';
+import { CmsSiteService } from '../../services/cms-site.service';
 
 declare var UIkit: any;
 
 @Component({
   selector: 'app-vagas-listar',
   standalone: true,
-  imports: [AsyncPipe, CommonModule, ReactiveFormsModule, TranslatePipe],
+  imports: [AsyncPipe, CommonModule, FormsModule, ReactiveFormsModule, TranslatePipe],
   templateUrl: './vagas-listar.component.html',
   styleUrls: ['./vagas-listar.component.css']
 })
-export class VagasListarComponent {
+export class VagasListarComponent implements OnInit, OnDestroy {
+  @Input() cmsMode = false;
+
   private vagaService = inject(VagaService);
   private sanitizer = inject(DomSanitizer);
+  readonly cmsSiteService = inject(CmsSiteService);
+  private siteSub?: Subscription;
 
-  vagas$ = this.vagaService.getVagas();
+  collections = VAGA_COLLECTIONS;
+  selectedCollection: VagaCollection = 'vagas';
+  private collectionSubject = new BehaviorSubject<VagaCollection>('vagas');
+
+  // Pesquisa & Paginação (modo CMS)
+  searchQuery = '';
+  currentPage = 1;
+  pageSize = 5;
+  pageSizeOptions = [5, 6, 10, 20];
+
+  vagas$: Observable<Vaga[]> = this.collectionSubject.pipe(
+    switchMap(col => this.vagaService.getVagas(col))
+  );
+
   selectedVaga: Vaga | null = null;
   contactForm: FormGroup;
 
@@ -30,10 +49,85 @@ export class VagasListarComponent {
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email, Validators.pattern(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/)]],
-      message: ['', Validators.required, Validators.minLength(10)],
+      message: ['', [Validators.required, Validators.minLength(10)]],
     });
   }
 
+  ngOnInit(): void {
+    if (this.cmsMode) {
+      this.siteSub = this.cmsSiteService.activeSite$.subscribe(siteId => {
+        const col = this.cmsSiteService.getSiteConfig(siteId).collections.vagas;
+        this.selectedCollection = col;
+        this.currentPage = 1;
+        this.collectionSubject.next(col);
+      });
+    } else {
+      this.collectionSubject.next('vagas');
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.siteSub?.unsubscribe();
+  }
+
+  filterItems(items: Vaga[]): Vaga[] {
+    const q = this.searchQuery.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(item =>
+      (item.posicao || '').toLowerCase().includes(q) ||
+      (item.departamento || '').toLowerCase().includes(q)
+    );
+  }
+
+  getTotalPages(totalItems: number): number {
+    const total = Math.max(1, Math.ceil(totalItems / this.pageSize));
+    if (this.currentPage > total) this.currentPage = total;
+    return total;
+  }
+
+  getPaginatedItems(filtered: Vaga[]): Vaga[] {
+    const total = this.getTotalPages(filtered.length);
+    const safePage = Math.min(Math.max(1, this.currentPage), total);
+    const start = (safePage - 1) * this.pageSize;
+    return filtered.slice(start, start + this.pageSize);
+  }
+
+  getPages(totalPages: number): number[] {
+    return Array.from({ length: totalPages }, (_, i) => i + 1);
+  }
+
+  getRangeStart(totalItems: number): number {
+    return totalItems === 0 ? 0 : (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  getRangeEnd(totalItems: number): number {
+    return totalItems === 0 ? 0 : Math.min(this.currentPage * this.pageSize, totalItems);
+  }
+
+  goToPage(page: number, totalPages: number): void {
+    if (page >= 1 && page <= totalPages) this.currentPage = page;
+  }
+
+  onSearchChange(): void {
+    this.currentPage = 1;
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.currentPage = 1;
+  }
+
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+  }
+
+  async deleteVaga(vaga: Vaga, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (!vaga.id) return;
+    if (confirm(`Deseja realmente eliminar a vaga "${vaga.posicao}" de "${this.selectedCollection}"?`)) {
+      await this.vagaService.deleteVaga(vaga.id, this.selectedCollection);
+    }
+  }
 
   isSending = false;
 
@@ -46,16 +140,15 @@ export class VagasListarComponent {
 
     this.contactForm.markAllAsTouched();
 
-
     if (this.contactForm.invalid) {
       window.alert('Por favor, preencha todos os campos obrigatórios.');
+      this.isSending = false;
       return;
     }
 
     const formData = {
       ...this.contactForm.value,
-      position: this.selectedVaga?.posicao,  // Add the position from selectedVaga
-      //to_email: this.selectedVaga?.emailDepartamento  // Depois activar esta opção para selecção automática do email do departamento a partir da vaga selecionada
+      position: this.selectedVaga?.posicao,
     };
 
     emailjs.send('service_yhmv9kn', 'template_5cejkm2', formData, {
@@ -70,25 +163,20 @@ export class VagasListarComponent {
         console.error('Falhou...', error.text);
         window.alert('Não foi possível enviar sua candidatura.');
       })
-  .finally(() => {
-    this.isSending = false;
-  });
+      .finally(() => {
+        this.isSending = false;
+      });
   }
 
-
   openModal(vaga: Vaga): void {
-    console.log('Vaga data:', vaga);
-    console.log('Responsibilities content:', vaga.content);
     this.selectedVaga = vaga;
     setTimeout(() => UIkit.modal('#vaga-modal').show(), 0);
   }
 
-  // Simplified function - just returns the raw content
   getResponsabilidades(): string {
     return this.selectedVaga?.content || '';
   }
 
-  // Helper to safely render HTML
   getSafeContent(): SafeHtml {
     if (!this.selectedVaga?.content) {
       return this.sanitizer.bypassSecurityTrustHtml('<p>No content available</p>');

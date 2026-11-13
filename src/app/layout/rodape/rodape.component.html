@@ -30,32 +30,73 @@
             <div class="footer-column">
                 <ul class="footer-links">
                     <li><b>{{'link.uteis' | translate }}</b></li>
-                    <li><a routerLink="/community-lists">{{ 'communityLists.footerLink' | translate }}</a></li>
-                    <li><a href="https://www.angonix.net/">Angonix</a></li>
-                    <li><a href="https://clouds2africa.com/#!/">Clouds2Africa</a></li>
-                    <li><a> {{'termos.condicoes' | translate }}</a></li>
-                    <li class="uk-margin-small-top" >
+                    @for (item of usefulLinksTop; track item.id) {
+                        <li>
+                            @if (!item.link) {
+                                <a>{{ (item.translateKey || item.title) | translate }}</a>
+                            } @else if (isExternalLink(item.link)) {
+                                <a [href]="item.link"
+                                    [attr.target]="item.targetBlank ? '_blank' : null"
+                                    [attr.rel]="item.targetBlank ? 'noopener noreferrer' : null">
+                                    {{ (item.translateKey || item.title) | translate }}
+                                </a>
+                            } @else {
+                                <a [routerLink]="item.link">{{ (item.translateKey || item.title) | translate }}</a>
+                            }
+                        </li>
+                    }
+                    <li class="uk-margin-small-top">
                         <details class="policies-accordion">
                             <summary>> {{'ourpolicies' | translate }} </summary>
                             <ul class="policies-submenu">
-                                <li><a routerLink="/privacy-policies">Política de Privacidade</a></li>
-                                <li><a routerLink="/cookies-policies">Política de Cookies</a></li>
-                                <li><button type="button" class="cookie-footer-btn" (click)="openCookieSettings()">{{ 'cookies.manage_cookies' | translate }}</button></li>
-                                <li><a href="https://angolacables.com/sgi" target="_blank" rel="noopener noreferrer">Política do Sistema de Gestão Integrado</a></li>
-                                <li><a href="https://angolacables.com/anti" target="_blank" rel="noopener noreferrer">Política Anti-Suborno</a></li>
-                                <li><a href="https://angolacables.com/politicas-cont-negocios" target="_blank" rel="noopener noreferrer">Política de Continuidade de Negócios</a></li>
-                                <li><a href="https://angolacables.com/politicas-contrat" target="_blank" rel="noopener noreferrer">Política de Aquisição e Relacionamento com Fornecedores</a></li>
-                                <li><a href="https://angolacables.com/politicas-id-dued" target="_blank" rel="noopener noreferrer">Política de Identificação, Aceitação e Due Diligence de Clientes e Parceiros</a></li>
-                                <li><a href="https://angolacables.com/politicas-seginf" target="_blank" rel="noopener noreferrer">Política de Segurança da Informação para Fornecedores e Prestadores</a></li>
-                                <li><a routerLink="/community-lists">{{ 'communityLists.footerLink' | translate }}</a></li>
+                                @for (item of policyLinks; track item.id) {
+                                    <li>
+                                        @if (!item.link) {
+                                            <a>{{ (item.translateKey || item.title) | translate }}</a>
+                                        } @else if (isExternalLink(item.link)) {
+                                            <a [href]="item.link"
+                                                [attr.target]="item.targetBlank !== false ? '_blank' : null"
+                                                [attr.rel]="item.targetBlank !== false ? 'noopener noreferrer' : null">
+                                                {{ (item.translateKey || item.title) | translate }}
+                                            </a>
+                                        } @else {
+                                            <a [routerLink]="item.link">{{ (item.translateKey || item.title) | translate }}</a>
+                                        }
+                                    </li>
+                                    @if (item.link === '/cookies-policies') {
+                                        <li>
+                                            <button type="button" class="cookie-footer-btn" (click)="openCookieSettings()">
+                                                {{ 'cookies.manage_cookies' | translate }}
+                                            </button>
+                                        </li>
+                                    }
+                                }
+                                @if (!hasCookiesPolicyLink) {
+                                    <li>
+                                        <button type="button" class="cookie-footer-btn" (click)="openCookieSettings()">
+                                            {{ 'cookies.manage_cookies' | translate }}
+                                        </button>
+                                    </li>
+                                }
                             </ul>
                         </details>
                     </li>
 
-                    <li><a target="_blank" href="https://portaldenuncias.angolacables.co.ao/">{{'canal.denuncias' |
-                            translate }}</a></li>
-
-
+                    @for (item of usefulLinksBottom; track item.id) {
+                        <li>
+                            @if (!item.link) {
+                                <a>{{ (item.translateKey || item.title) | translate }}</a>
+                            } @else if (isExternalLink(item.link)) {
+                                <a [href]="item.link"
+                                    [attr.target]="item.targetBlank !== false ? '_blank' : null"
+                                    [attr.rel]="item.targetBlank !== false ? 'noopener noreferrer' : null">
+                                    {{ (item.translateKey || item.title) | translate }}
+                                </a>
+                            } @else {
+                                <a [routerLink]="item.link">{{ (item.translateKey || item.title) | translate }}</a>
+                            }
+                        </li>
+                    }
                 </ul>
             </div>
 
@@ -63,12 +104,21 @@
             <div class="footer-column">
                 <ul class="footer-links">
                     <li><b>{{'sobre.nos' | translate }}</b></li>
-                    <li><a routerLink="/sobre">{{'menu-conheca' | translate }}</a></li>
-                    <li><a routerLink="/eventos">{{'menu-eventos' | translate }}</a></li>
-                    <li><a routerLink="/blog">{{'menu-blog' | translate }}</a></li>
-                    <li><a routerLink="/noticias">{{'menu-noticias' | translate }}</a></li>
-                    <li><a routerLink="/trust-center">{{'menu-trust' | translate }}</a></li>
-                    <li><a routerLink="/recrutamento">{{'menu-recrutamento' | translate }}</a></li>
+                    @for (item of aboutUsLinks; track item.id) {
+                        <li>
+                            @if (!item.link) {
+                                <a>{{ (item.translateKey || item.title) | translate }}</a>
+                            } @else if (isExternalLink(item.link)) {
+                                <a [href]="item.link"
+                                    [attr.target]="item.targetBlank ? '_blank' : null"
+                                    [attr.rel]="item.targetBlank ? 'noopener noreferrer' : null">
+                                    {{ (item.translateKey || item.title) | translate }}
+                                </a>
+                            } @else {
+                                <a [routerLink]="item.link">{{ (item.translateKey || item.title) | translate }}</a>
+                            }
+                        </li>
+                    }
                 </ul>
             </div>
 
@@ -76,12 +126,21 @@
             <div class="footer-column">
                 <ul class="footer-links">
                     <li><b>{{'escritorios' | translate }}</b></li>
-                    <li><a href="https://angolacables.co.ao/">Angola</a></li>
-                    <li><a href="https://telcables.co.za/">África do Sul</a></li>
-                    <li><a href="https://telcables.com.br/">Brasil</a></li>
-                    <li><a href="https://telcables.net/">EUA</a></li>
-                    <li><a href="https://telcables.ng/">Nigeria</a></li>
-                    <li><a href="https://telcables.pt/">Portugal</a></li>
+                    @for (item of officeLinks; track item.id) {
+                        <li>
+                            @if (!item.link) {
+                                <a>{{ (item.translateKey || item.title) | translate }}</a>
+                            } @else if (isExternalLink(item.link)) {
+                                <a [href]="item.link"
+                                    [attr.target]="item.targetBlank ? '_blank' : null"
+                                    [attr.rel]="item.targetBlank ? 'noopener noreferrer' : null">
+                                    {{ (item.translateKey || item.title) | translate }}
+                                </a>
+                            } @else {
+                                <a [routerLink]="item.link">{{ (item.translateKey || item.title) | translate }}</a>
+                            }
+                        </li>
+                    }
                 </ul>
             </div>
 

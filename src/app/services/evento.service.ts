@@ -1,4 +1,3 @@
-
 import { Injectable, inject, signal } from '@angular/core';
 import { Firestore, addDoc, collection, collectionData, deleteDoc, doc, docData, serverTimestamp } from '@angular/fire/firestore';
 import { Evento, EventoCollection } from '../models/evento.models';
@@ -15,6 +14,7 @@ export class EventoService {
   eventos = signal<Evento[]>([]);
   eventosNg = signal<Evento[]>([]);
   eventosPt = signal<Evento[]>([]);
+  eventosZa = signal<Evento[]>([]);
   eventosDestaqueEU = signal<Evento[]>([]);
 
   constructor() {
@@ -43,6 +43,12 @@ export class EventoService {
   getEventosPt(): Observable<Evento[]> {
     return this.getEventos('eventosPt').pipe(
       tap(eventos => this.eventosPt.set(eventos))
+    );
+  }
+
+  getEventosZa(): Observable<Evento[]> {
+    return this.getEventos('eventosZa').pipe(
+      tap(eventos => this.eventosZa.set(eventos))
     );
   }
 

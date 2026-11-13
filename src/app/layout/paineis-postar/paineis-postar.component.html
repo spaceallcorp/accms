@@ -1,66 +1,83 @@
-<div class="uk-container uk-margin-large-top">
+<div class="cms-form-wrapper">
 
-    <h2 class="uk-text-left">Publicar painel de evento</h2>
-
-    <!-- Error Message -->
-    <div *ngIf="errorMessage" class="uk-alert-danger uk-margin" uk-alert>
-        {{ errorMessage }}
+  <div class="cms-form-header">
+    <div class="cms-form-title-group">
+      <span class="cms-form-icon-box" aria-hidden="true">
+        <svg class="cms-title-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+      </span>
+      <div>
+        <h2 class="cms-form-title">Novo Painel</h2>
+        <p class="cms-form-subtitle">Publicar painel na operação seleccionada</p>
+      </div>
     </div>
 
-    <!-- Title -->
-    <div class="uk-margin-top uk-text-left">
-        <label for="title" class="uk-form-label">Título do painel</label>
-        <div class="uk-form-controls">
-            <input type="text" id="title" [(ngModel)]="newPainel.title" class="uk-input"
-                placeholder="Digite o título do painel" required />
-        </div>
-    </div>
-
-    <!-- Featured Image -->
-    <div class="uk-margin-top uk-text-left">
-        <label for="featuredImageUrl" class="uk-form-label">Link do banner do painel</label>
-        <div class="uk-form-controls">
-            <input type="url" id="featuredImageUrl" [(ngModel)]="featuredImageUrl" class="uk-input"
-                placeholder="https://exemplo.com/imagem.jpg" />
-        </div>
-
-        <div *ngIf="featuredImageUrl" class="uk-margin-top">
-            <p>Pré-visualização:</p>
-            <img [src]="featuredImageUrl" alt="Imagem de destaque" style="max-width: 300px;" />
-        </div>
-    </div>
-
-  <div class="uk-margin-top uk-text-left">
-
-    <label for="eventoUrl" class="uk-form-label">Link da Landing Page</label>
-    <div class="uk-form-controls">
-      <input type="url" id="eventoUrl" [(ngModel)]="painelUrl" class="uk-input"
-        placeholder="https://exemplo.com/landingpage" />
+    <div class="cms-op-destination-pill" title="Operação de destino activa">
+      <img [src]="cmsSiteService.activeSiteConfig().logoSvg" [alt]="cmsSiteService.activeSiteConfig().name" class="cms-op-destination-logo" />
+      <code class="cms-op-destination-code">{{ selectedCollection }}</code>
     </div>
   </div>
 
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="cms-alert cms-alert-error">
+    <svg class="cms-btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span>{{ errorMessage }}</span>
+  </div>
 
-    <div class="uk-margin-top uk-text-left">
-        <label for="featuredImageUrl" class="uk-form-label"> Nome do evento correspondente</label>
-        <div class="uk-form-controls">
-            <input type="text" id="author" [(ngModel)]="newPainel.author" class="uk-input" placeholder="Nome do autor" />
-        </div>
+  <!-- Success Message -->
+  <div *ngIf="successMessage" class="cms-alert cms-alert-success">
+    <svg class="cms-btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <span>{{ successMessage }}</span>
+  </div>
+
+  <div class="cms-form-body">
+    <div class="cms-field-group">
+      <label for="painelTitleInput" class="cms-label">Título do Painel <span class="cms-required">*</span></label>
+      <input type="text" id="painelTitleInput" [(ngModel)]="newPainel.title" class="cms-input" placeholder="Digite o título do painel" required />
     </div>
 
-    <!-- Editor 
-    <div class="uk-margin-top">
-        <editor [(ngModel)]="editorContent" [init]="editorConfig"
-            apiKey="a8yzw2uhdu7v6niumnokr811bginwp5kfr689ismxj4dtnxu">
-        </editor>
-    </div>
--->
-    <!-- Submit Button -->
-    <div class="uk-text-left">
+    <div class="cms-field-grid-2">
+      <div class="cms-field-group">
+        <label for="painelAuthorInput" class="cms-label">Evento Correspondente</label>
+        <input type="text" id="painelAuthorInput" [(ngModel)]="newPainel.author" class="cms-input" placeholder="Ex: Tech Summit" />
+      </div>
 
-        <button class="uk-margin-large-top botao-azul uk-button uk-button-large uk-border-rounded" (click)="onSubmit()"
-            [disabled]="isSubmitting">
-            {{ isSubmitting ? 'Publicando...' : 'Salvar e publicar' }}
-        </button>
-
+      <div class="cms-field-group">
+        <label for="painelUrlInput" class="cms-label">Link da Landing Page</label>
+        <input type="url" id="painelUrlInput" [(ngModel)]="painelUrl" class="cms-input" placeholder="https://..." />
+      </div>
     </div>
+
+    <div class="cms-field-group">
+      <label for="painelImgInput" class="cms-label">Banner do Painel (URL da Imagem)</label>
+      <input type="url" id="painelImgInput" [(ngModel)]="featuredImageUrl" class="cms-input" placeholder="https://exemplo.com/imagem.jpg" />
+
+      <div *ngIf="featuredImageUrl" class="cms-preview-box">
+        <img [src]="featuredImageUrl" alt="Imagem de destaque" />
+        <span style="font-size: 0.74rem; color: #475569; font-weight: 600;">Pré-visualização do painel</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="cms-form-footer">
+    <button type="button" class="cms-submit-btn" (click)="onSubmit()" [disabled]="isSubmitting">
+      <svg class="cms-btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/>
+        <polyline points="7 3 7 8 15 8"/>
+      </svg>
+      <span>{{ isSubmitting ? 'A publicar...' : 'Publicar Painel' }}</span>
+    </button>
+  </div>
+
 </div>

@@ -1,55 +1,83 @@
-<div class="uk-container uk-margin-large-top">
+<div class="cms-form-wrapper">
 
-  <h2 class="uk-text-left">Criar vaga de emprego</h2>
+  <div class="cms-form-header">
+    <div class="cms-form-title-group">
+      <span class="cms-form-icon-box" aria-hidden="true">
+        <svg class="cms-title-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+      </span>
+      <div>
+        <h2 class="cms-form-title">Nova Vaga</h2>
+        <p class="cms-form-subtitle">Abrir oportunidade na operação seleccionada</p>
+      </div>
+    </div>
+
+    <div class="cms-op-destination-pill" title="Operação de destino activa">
+      <img [src]="cmsSiteService.activeSiteConfig().logoSvg" [alt]="cmsSiteService.activeSiteConfig().name" class="cms-op-destination-logo" />
+      <code class="cms-op-destination-code">{{ selectedCollection }}</code>
+    </div>
+  </div>
 
   <!-- Error Message -->
-  <div *ngIf="errorMessage" class="uk-alert-danger uk-margin" uk-alert>
-    {{ errorMessage }}
+  <div *ngIf="errorMessage" class="cms-alert cms-alert-error">
+    <svg class="cms-btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span>{{ errorMessage }}</span>
   </div>
 
-  <!-- Title -->
-  <div class="uk-margin-top uk-text-left">
-    <label for="title" class="uk-form-label">Posição aberta</label>
-    <div class="uk-form-controls">
-      <input type="text" id="title" [(ngModel)]="newVaga.posicao" class="uk-input" placeholder="Digite o título do artigo"
-        required />
+  <!-- Success Message -->
+  <div *ngIf="successMessage" class="cms-alert cms-alert-success">
+    <svg class="cms-btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+    <span>{{ successMessage }}</span>
+  </div>
+
+  <div class="cms-form-body">
+    <div class="cms-field-group">
+      <label for="vagaTitleInput" class="cms-label">Posição / Cargo <span class="cms-required">*</span></label>
+      <input type="text" id="vagaTitleInput" [(ngModel)]="newVaga.posicao" class="cms-input" placeholder="Ex: Engenheiro de Redes IP" required />
+    </div>
+
+    <div class="cms-field-grid-2">
+      <div class="cms-field-group">
+        <label for="vagaDeptInput" class="cms-label">Departamento</label>
+        <input type="text" id="vagaDeptInput" [(ngModel)]="newVaga.departamento" class="cms-input" placeholder="Ex: Engenharia e Operações" />
+      </div>
+
+      <div class="cms-field-group">
+        <label for="vagaImgInput" class="cms-label">Imagem da Vaga (URL)</label>
+        <input type="url" id="vagaImgInput" [(ngModel)]="featuredImageUrl" class="cms-input" placeholder="https://..." />
+      </div>
+    </div>
+
+    <div *ngIf="featuredImageUrl" class="cms-preview-box">
+      <img [src]="featuredImageUrl" alt="Imagem de destaque" />
+      <span style="font-size: 0.74rem; color: #475569; font-weight: 600;">Pré-visualização da imagem</span>
+    </div>
+
+    <div class="cms-field-group">
+      <label class="cms-label">Responsabilidades e Requisitos <span class="cms-required">*</span></label>
+      <editor [(ngModel)]="editorContent" [init]="editorConfig" apiKey="a8yzw2uhdu7v6niumnokr811bginwp5kfr689ismxj4dtnxu">
+      </editor>
     </div>
   </div>
 
-  <!-- Featured Image -->
-  <div class="uk-margin-top uk-text-left">
-    <label for="featuredImageUrl" class="uk-form-label">Link da imagem da vaga</label>
-    <div class="uk-form-controls">
-      <input type="url" id="featuredImageUrl" [(ngModel)]="featuredImageUrl" class="uk-input"
-        placeholder="https://exemplo.com/imagem.jpg" />
-    </div>
-
-    <div *ngIf="featuredImageUrl" class="uk-margin-top">
-      <p>Pré-visualização:</p>
-      <img [src]="featuredImageUrl" alt="Imagem de destaque" style="max-width: 300px;" />
-    </div>
-  </div>
-
-  <div class="uk-margin-top uk-text-left">
-    <label for="featuredImageUrl" class="uk-form-label">Departamento:</label>
-    <div class="uk-form-controls">
-      <input type="text" id="departamento" [(ngModel)]="newVaga.departamento" class="uk-input" placeholder="Departamento que abriu a vaga" />
-    </div>
-  </div>
-
-  <!-- Editor -->
-  <h3 class="uk-text-left">Descrição das responsabilidades</h3>
-
-  <div class="uk-margin-top">
-    <editor [(ngModel)]="editorContent" [init]="editorConfig" apiKey="a8yzw2uhdu7v6niumnokr811bginwp5kfr689ismxj4dtnxu">
-    </editor>
-  </div>
-
-  <!-- Submit Button -->
-  <div class="uk-text-left">
-    <button class="uk-margin-large-top botao-azul uk-button uk-button-large uk-border-rounded" (click)="onSubmit()"
-      [disabled]="isSubmitting">
-      {{ isSubmitting ? 'Publicando...' : 'Salvar e publicar' }}
+  <div class="cms-form-footer">
+    <button type="button" class="cms-submit-btn" (click)="onSubmit()" [disabled]="isSubmitting">
+      <svg class="cms-btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+        <polyline points="17 21 17 13 7 13 7 21"/>
+        <polyline points="7 3 7 8 15 8"/>
+      </svg>
+      <span>{{ isSubmitting ? 'A publicar...' : 'Publicar Vaga' }}</span>
     </button>
   </div>
+
 </div>

@@ -1,4 +1,6 @@
 import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ArtigoPostarComponent } from '../../layout/artigo-postar/artigo-postar.component';
 import { MenuComponent } from '../../layout/menu/menu.component';
 import { TranslatePipe, TranslateService } from '@ngx-translate/core';
@@ -17,9 +19,14 @@ import { LayoutItemsComponent } from "../../layout/layout-items/layout-items.com
 import { ProductListComponent } from '../../layout/product-list/product-list.component';
 
 import { AuthService } from '../../services/auth.service';
+import { CmsSiteService } from '../../services/cms-site.service';
+import { CmsSiteId } from '../../models/cms-site.model';
+
 @Component({
   selector: 'app-dashboard',
   imports: [
+    CommonModule,
+    FormsModule,
     ArtigoPostarComponent,
     MenuComponent,
     ArtigoListaComponent,
@@ -34,31 +41,31 @@ import { AuthService } from '../../services/auth.service';
     PaineisListarComponent,
     RodapeComponent,
     ProdutoCriarComponent,
-    LayoutItemsComponent, 
+    LayoutItemsComponent,
     ProductListComponent
-],
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
 export class DashboardComponent {
-
-
-  // ✅ DECLARA COMO PÚBLICO (removendo a palavra 'private')
-  // Desta forma, o template HTML pode aceder às propriedades e métodos do AuthService
   public authService = inject(AuthService);
+  public cmsSiteService = inject(CmsSiteService);
 
-  // Método opcional caso prefiras acionar o logout por uma função do componente
   async onLogout(): Promise<void> {
     await this.authService.logout();
   }
-           useLanguage(language: string): void {
-                this.translate.use(language);
-            }
-            
-            constructor(private translate: TranslateService) {}
-            selectedCountry: string = 'Angola';
 
-            activeTab: string = 'products'; // Set default active tab
+  useLanguage(language: string): void {
+    this.translate.use(language);
+  }
+
+  constructor(private translate: TranslateService) {}
+
+  activeTab: string = 'products'; // Set default active tab
+
+  selectSite(siteId: CmsSiteId): void {
+    this.cmsSiteService.setActiveSite(siteId);
+  }
 
   setActiveTab(tab: string) {
     this.activeTab = tab;
@@ -67,5 +74,4 @@ export class DashboardComponent {
   isTabActive(tab: string): boolean {
     return this.activeTab === tab;
   }
-
 }

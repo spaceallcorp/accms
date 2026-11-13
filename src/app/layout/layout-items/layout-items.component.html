@@ -1,257 +1,249 @@
-<!-- layout-admin.component.html -->
+<!-- layout-items.component.html -->
 <div class="layout-admin-container">
-  <!-- Modern Header with Gradient -->
 
-
-  <!-- Toast Messages -->
-  <div class="toast-container">
-    <div *ngIf="successMessage" class="toast toast-success" (click)="clearMessages()">
-      <div class="toast-icon">✅</div>
-      <div class="toast-content">
-        <strong>Success!</strong>
-        <p>{{ successMessage }}</p>
+  <!-- Active Subsidiary Context Control Bar -->
+  <div class="cms-layout-subsidiary-bar">
+    <div class="subsidiary-info">
+      <div class="subsidiary-brand">
+        <img
+          [src]="cmsSiteService.activeSiteConfig().logoSvg"
+          [alt]="cmsSiteService.activeSiteConfig().name"
+          class="subsidiary-logo-img"
+        />
+        <div>
+          <span class="subsidiary-eyebrow">LAYOUT EM EDIÇÃO</span>
+          <h3 class="subsidiary-title">
+            {{ cmsSiteService.activeSiteConfig().name }}
+            <span class="subsidiary-badge">{{ cmsSiteService.activeSiteConfig().regionLabel }}</span>
+          </h3>
+        </div>
       </div>
-      <button class="toast-close">&times;</button>
+
+      <div class="subsidiary-target-collections">
+        <span class="collections-hint">Colecções activas:</span>
+        <code class="collection-code">navBarItems{{ cmsSiteService.activeSiteConfig().suffix }}</code>
+        <code class="collection-code">footerItems{{ cmsSiteService.activeSiteConfig().suffix }}</code>
+        <code class="collection-code">addresses{{ cmsSiteService.activeSiteConfig().suffix }}</code>
+        <code class="collection-code">heroSlider{{ cmsSiteService.activeSiteConfig().suffix }}</code>
+      </div>
     </div>
-    <div *ngIf="errorMessage" class="toast toast-error" (click)="clearMessages()">
-      <div class="toast-icon">❌</div>
-      <div class="toast-content">
-        <strong>Error!</strong>
-        <p>{{ errorMessage }}</p>
+
+    <div class="subsidiary-actions">
+      <div class="subsidiary-select-wrapper">
+        <label for="subsidiarySelect" class="uk-form-label">Trocar Operação:</label>
+        <select
+          id="subsidiarySelect"
+          class="uk-select uk-form-small uk-border-rounded"
+          [ngModel]="cmsSiteService.activeSiteId()"
+          (ngModelChange)="onSelectSite($event)">
+          @for (site of cmsSiteService.sites; track site.id) {
+            <option [value]="site.id">
+              {{ site.name }} ({{ site.shortName }})
+            </option>
+          }
+        </select>
       </div>
-      <button class="toast-close">&times;</button>
+
+      <button
+        type="button"
+        class="uk-button uk-button-default uk-button-small uk-border-rounded btn-seed-defaults"
+        (click)="seedCurrentSubsidiary()"
+        [disabled]="loading"
+        title="Preenche dados padrão (Endereços, Logos oficiais, Redes Sociais e Rodapé) caso vazios">
+        <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"/>
+          <polyline points="1 20 1 14 7 14"/>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </svg>
+        <span>Inicializar Defaults</span>
+      </button>
     </div>
   </div>
 
-  <!-- Modern Loading Overlay -->
+  <!-- Toast Messages -->
+  <div class="toast-container" *ngIf="successMessage || errorMessage">
+    <div *ngIf="successMessage" class="toast toast-success" (click)="clearMessages()">
+      <div class="toast-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="toast-content">
+        <strong>Sucesso</strong>
+        <p>{{ successMessage }}</p>
+      </div>
+      <button type="button" class="toast-close" (click)="clearMessages(); $event.stopPropagation()">&times;</button>
+    </div>
+    <div *ngIf="errorMessage" class="toast toast-error" (click)="clearMessages()">
+      <div class="toast-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+      </div>
+      <div class="toast-content">
+        <strong>Erro</strong>
+        <p>{{ errorMessage }}</p>
+      </div>
+      <button type="button" class="toast-close" (click)="clearMessages(); $event.stopPropagation()">&times;</button>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
   <div *ngIf="loading" class="loading-overlay">
     <div class="loading-card">
       <div class="modern-spinner"></div>
-      <p>Loading...</p>
+      <p>A processar...</p>
     </div>
   </div>
 
-  <!-- Modern Tabs -->
+  <!-- Modern Navigation Tabs -->
   <div class="tabs-modern">
-    <button *ngFor="let tab of tabs" [class.active]="activeTab === tab.id" (click)="setActiveTab(tab.id)"
+    <button
+      *ngFor="let tab of tabs"
+      [class.active]="activeTab === tab.id"
+      (click)="setActiveTab(tab.id)"
       class="tab-btn">
-      <span class="tab-icon">{{ tab.icon }}</span>
+      <span class="tab-icon">
+        <ng-container [ngSwitch]="tab.id">
+          <!-- Navbar -->
+          <svg *ngSwitchCase="'navbar'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+          <!-- Footer -->
+          <svg *ngSwitchCase="'footer'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="15" x2="21" y2="15"/>
+          </svg>
+          <!-- Logos -->
+          <svg *ngSwitchCase="'logos'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <!-- Social -->
+          <svg *ngSwitchCase="'social'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <!-- Addresses -->
+          <svg *ngSwitchCase="'addresses'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <!-- Partners -->
+          <svg *ngSwitchCase="'partners'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <!-- Hero -->
+          <svg *ngSwitchCase="'hero'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+        </ng-container>
+      </span>
       <span class="tab-label">{{ tab.label }}</span>
       <span class="tab-indicator"></span>
     </button>
   </div>
 
-  <!-- Content Panels with Animations -->
+  <!-- Content Panels -->
   <div class="content-panels">
 
+    <!-- ==================== NAVBAR TAB ==================== -->
     <div *ngIf="activeTab === 'navbar'" class="panel fade-in">
       <div class="panel-grid">
-
         <div class="form-card card" id="navForm">
           <div class="card-header">
-            <div class="card-icon">📁</div>
-            <h3>{{ editingNavId ? 'Edit Category & Links' : 'Create New Category' }}</h3>
+            <h3>{{ editingNavId ? 'Editar Categoria & Links' : 'Criar Nova Categoria de Navegação' }}</h3>
           </div>
 
           <form [formGroup]="navForm" (ngSubmit)="onSubmitNav()">
-
             <div class="form-group-modern">
-              <label>Category Title</label>
+              <label>Título da Categoria</label>
               <div class="input-wrapper">
-                <span class="input-icon">📝</span>
-                <input class="uk-width-1-1" type="text" formControlName="title"
-                  placeholder="e.g., Connectivity, Cloud Services">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="title"
+                  placeholder="Ex: Conectividade, Cloud Services, Data Center">
               </div>
               <div *ngIf="isFieldInvalid(navForm, 'title')" class="error-modern">
-                Title is required (minimum 2 characters)
+                O título é obrigatório (mínimo 2 caracteres)
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Base Link (Optional)</label>
+              <label>Link Base (Opcional)</label>
               <div class="input-wrapper">
-                <span class="input-icon">🔗</span>
-                <input class="uk-width-1-1" type="text" formControlName="link" placeholder="e.g., /connectivity">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="link" placeholder="Ex: /connectivity">
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Display Order</label>
+              <label>Ordem de Apresentação</label>
               <div class="input-wrapper">
-                <span class="input-icon">🔢</span>
-                <input class="uk-width-1-1" type="number" formControlName="order" placeholder="1, 2, 3...">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="number" formControlName="order" placeholder="1, 2, 3...">
               </div>
               <div *ngIf="isFieldInvalid(navForm, 'order')" class="error-modern">
-                Order is required (minimum 1)
+                Ordem é obrigatória (mínimo 1)
               </div>
             </div>
 
-
-            <div class="sub-items-section" style="margin-top: 25px; border-top: 1px dashed #e0e0e0; padding-top: 20px;">
-
-
-              <div class="form-group-modern">
-                <label> Sub-links in this catergory</label>
-                <div class="input-wrapper">
-                  <button type="button" class="uk-button uk-border-rounded uk-button-small uk-button-primary"
-                    (click)="addSubItem()" style="display: flex; align-items: center; gap: 5px;">
-                    ➕ Add Sub-link
-                  </button>
-                </div>
+            <div class="sub-items-section">
+              <div class="sub-items-header">
+                <label class="uk-text-bold">Sub-links nesta categoria</label>
+                <button type="button" class="uk-button uk-button-primary uk-button-small uk-border-rounded btn-add-sublink" (click)="addSubItem()">
+                  <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  <span>Adicionar Sub-link</span>
+                </button>
               </div>
 
-
-              <div formArrayName="items">
-                <div *ngFor="let subCtrl of subItemsFormArray.controls; let i = index" [formGroupName]="i"
-                  style="display: flex; gap: 10px; margin-bottom: 12px; align-items: center; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #eef0f2;">
-
-                  <div style="flex: 1;">
-                    <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 4px;">Link
-                      Label</label>
-                    <input class="uk-input uk-form-small" type="text" formControlName="title"
-                      placeholder="e.g., IP Transit">
+              <div formArrayName="items" class="sub-items-list">
+                <div *ngFor="let subCtrl of subItemsFormArray.controls; let i = index" [formGroupName]="i" class="sub-item-row">
+                  <div class="sub-input-col">
+                    <label class="sub-label">Rótulo do Link</label>
+                    <input class="uk-input uk-form-small uk-border-rounded" type="text" formControlName="title" placeholder="Ex: IP Transit">
                   </div>
 
-                  <div style="flex: 1;">
-                    <label style="font-size: 0.75rem; color: #666; display: block; margin-bottom: 4px;">URL
-                      Route</label>
-                    <input class="uk-input uk-form-small" type="text" formControlName="link"
-                      placeholder="e.g., /ip-transit">
+                  <div class="sub-input-col">
+                    <label class="sub-label">Rota / URL</label>
+                    <input class="uk-input uk-form-small uk-border-rounded" type="text" formControlName="link" placeholder="Ex: /ip-transit">
                   </div>
 
-                  <div style="padding-top: 20px;">
-                    <button type="button" class="action-btn delete-btn" (click)="removeSubItem(i)"
-                      title="Remove Sub-link"
-                      style="background-color: #ffebee; color: #d32f2f; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;">
-                      🗑️
+                  <div class="sub-action-col">
+                    <button type="button" class="action-btn delete-btn" (click)="removeSubItem(i)" title="Remover sub-link">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                      </svg>
                     </button>
                   </div>
                 </div>
 
-                <div *ngIf="subItemsFormArray.length === 0" class="empty-state"
-                  style="padding: 15px; border: 1px dashed #ccc; border-radius: 6px; background: transparent;">
-                  <p style="margin: 0; font-size: 0.85rem; color: #999;">No sub-links added to this category yet.</p>
+                <div *ngIf="subItemsFormArray.length === 0" class="sub-items-empty">
+                  <p>Nenhum sub-link adicionado a esta categoria ainda.</p>
                 </div>
-              </div>
-            </div>
-
-            <div class="form-actions-modern" style="margin-top: 25px; border-top: 1px solid #eee; padding-top: 15px;">
-              <button type="submit" class="btn-primary" [disabled]="loading">
-                <span class="btn-icon">{{ editingNavId ? '🔄' : '➕' }}</span>
-                {{ editingNavId ? 'Update Category' : 'Create Category' }}
-              </button>
-              <button type="button" *ngIf="editingNavId" (click)="resetNavForm()" class="btn-secondary">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div class="list-card card">
-          <div class="card-header">
-            <h3>Navbar Architecture ({{ (navItems$ | async)?.length || 0 }} Categories)</h3>
-          </div>
-          <div class="items-container">
-
-            <div *ngIf="(navItems$ | async)?.length === 0" class="empty-state">
-              <div class="empty-icon">📭</div>
-              <p>No navigation architecture defined yet</p>
-              <small>Create your first structural category using the form on the left</small>
-            </div>
-
-            <div *ngFor="let category of navItems$ | async" class="item-card-modern"
-              style="flex-direction: column; align-items: flex-start; gap: 12px; padding: 16px;">
-
-              <div class="item-content"
-                style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <div class="item-title" style="font-weight: 700; font-size: 1.1rem; color: #111;">
-                    {{ category.title }}
-                    <span class="badge"
-                      style="font-size: 0.75rem; background: #f0f1f3; color: #555; font-weight: 500; margin-left: 6px;">Order:
-                      {{ category.order }}</span>
-                  </div>
-                  <div class="item-meta" style="margin-top: 4px;" *ngIf="category.link">
-                    <span class="badge badge-link"
-                      style="font-family: monospace; background: #e8f5e9; color: #2e7d32;">Base URL: {{ category.link
-                      }}</span>
-                  </div>
-                </div>
-
-                <div class="item-actions-modern">
-                  <button (click)="editNavItem(category)" class="action-btn edit-btn"
-                    title="Edit Category Architecture">
-                    ✏️
-                  </button>
-                  <button (click)="deleteNavItem(category.id)" class="action-btn delete-btn"
-                    title="Delete Category & Sub-links">
-                    🗑️
-                  </button>
-                </div>
-              </div>
-
-              <div class="sub-items-tree"
-                style="width: 100%; padding-left: 15px; border-left: 3px solid #666; margin-top: 4px; display: flex; flex-direction: column; gap: 6px;">
-                <div *ngFor="let sub of category.items"
-                  style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem;">
-                  <span style="color: #777;">↳</span>
-                  <span style="font-weight: 600; color: #333;">{{ sub.title }}</span>
-                  <span class="badge badge-link"
-                    style="font-family: monospace; font-size: 0.8rem; background: #f4f5f7; color: #666;">{{ sub.link
-                    }}</span>
-                </div>
-
-                <div *ngIf="!category.items || category.items.length === 0"
-                  style="font-size: 0.85rem; color: #999; font-style: italic; padding-left: 12px;">
-                  No sub-links inside this column.
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-    <!-- ==================== FOOTER TAB ==================== -->
-    <div *ngIf="activeTab === 'footer'" class="panel fade-in">
-      <div class="panel-grid">
-        <div class="form-card card">
-          <div class="card-header">
-            <div class="card-icon">➕</div>
-            <h3>{{ editingFooterId ? 'Edit Footer Item' : 'Create New Footer Item' }}</h3>
-          </div>
-          <form [formGroup]="footerForm" (ngSubmit)="onSubmitFooter()">
-            <div class="form-group-modern">
-              <label>Title</label>
-              <div class="input-wrapper">
-                <span class="input-icon">📄</span>
-                <input class="uk-width-1-2" type="text" formControlName="title"
-                  placeholder="e.g., Privacy Policy, Terms of Use">
-              </div>
-              <div *ngIf="isFieldInvalid(footerForm, 'title')" class="error-modern">
-                Title is required (minimum 2 characters)
-              </div>
-            </div>
-
-            <div class="form-group-modern">
-              <label>Link</label>
-              <div class="input-wrapper">
-                <span class="input-icon">🔗</span>
-                <input class="uk-width-1-2" type="text" formControlName="link" placeholder="e.g., /privacy, /terms">
-              </div>
-              <div *ngIf="isFieldInvalid(footerForm, 'link')" class="error-modern">
-                Link is required
               </div>
             </div>
 
             <div class="form-actions-modern">
               <button type="submit" class="btn-primary" [disabled]="loading">
-                <span class="btn-icon">{{ editingFooterId ? '🔄' : '➕' }}</span>
-                {{ editingFooterId ? 'Update Item' : 'Add Item' }}
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>{{ editingNavId ? 'Actualizar Categoria' : 'Criar Categoria' }}</span>
               </button>
-              <button type="button" *ngIf="editingFooterId" (click)="resetFooterForm()" class="btn-secondary">
-                Cancel
+              <button type="button" *ngIf="editingNavId" (click)="resetNavForm()" class="btn-secondary">
+                Cancelar
               </button>
             </div>
           </form>
@@ -259,27 +251,218 @@
 
         <div class="list-card card">
           <div class="card-header">
-            <h3>Footer Items ({{ (footerItems$ | async)?.length || 0 }})</h3>
+            <h3>Arquitectura de Navegação ({{ (navItems$ | async)?.length || 0 }} Categorias)</h3>
           </div>
           <div class="items-container">
-            <div *ngIf="(footerItems$ | async)?.length === 0" class="empty-state">
-              <div class="empty-icon">📭</div>
-              <p>No footer items yet</p>
-              <small>Add your first footer item using the form</small>
+            <div *ngIf="(navItems$ | async)?.length === 0" class="empty-state">
+              <div class="empty-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+              </div>
+              <p>Nenhuma categoria de navegação configurada nesta operação.</p>
+              <small>Utilize o formulário à esquerda para criar categorias e menus.</small>
             </div>
-            <div *ngFor="let item of footerItems$ | async" class="item-card-modern">
+
+            <div *ngFor="let category of navItems$ | async" class="nav-category-card">
+              <div class="category-header-row">
+                <div>
+                  <div class="category-title">
+                    {{ category.title }}
+                    <span class="badge badge-order">Ordem: {{ category.order }}</span>
+                  </div>
+                  <div class="category-meta" *ngIf="category.link">
+                    <span class="badge badge-url">{{ category.link }}</span>
+                  </div>
+                </div>
+
+                <div class="item-actions-modern">
+                  <button (click)="editNavItem(category)" class="action-btn edit-btn" title="Editar categoria">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                  </button>
+                  <button (click)="deleteNavItem(category.id)" class="action-btn delete-btn" title="Eliminar categoria">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Sub-links container with uniform border -->
+              <div class="sub-items-tree-box">
+                <div *ngFor="let sub of category.items" class="sub-link-chip">
+                  <svg class="icon-inline-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                  <span class="sub-link-title">{{ sub.title }}</span>
+                  <code class="sub-link-path">{{ sub.link }}</code>
+                </div>
+
+                <div *ngIf="!category.items || category.items.length === 0" class="sub-empty-note">
+                  Sem sub-links vinculados a esta categoria.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== FOOTER TAB ==================== -->
+    <div *ngIf="activeTab === 'footer'" class="panel fade-in">
+      <div class="panel-grid">
+        <div class="form-card card" id="footerFormCard">
+          <div class="card-header">
+            <h3>{{ editingFooterId ? 'Editar Item de Rodapé' : 'Criar Novo Item de Rodapé' }}</h3>
+          </div>
+          <form [formGroup]="footerForm" (ngSubmit)="onSubmitFooter()">
+            <div class="form-group-modern">
+              <label>Secção / Coluna de Destino</label>
+              <div class="input-wrapper">
+                <select class="uk-select uk-border-rounded uk-width-1-1" formControlName="section">
+                  <option *ngFor="let sec of footerSections" [value]="sec.value">
+                    {{ sec.label }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <label>Título / Rótulo</label>
+              <div class="input-wrapper">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="title"
+                  placeholder="Ex: Política de Privacidade, Trust Center, Angonix">
+              </div>
+              <div *ngIf="isFieldInvalid(footerForm, 'title')" class="error-modern">
+                Título é obrigatório (mínimo 2 caracteres)
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <label>Link / URL</label>
+              <div class="input-wrapper">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="link"
+                  placeholder="Ex: /privacy-policies ou https://www.angonix.net/">
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <label>Ordem de Exibição</label>
+              <div class="input-wrapper">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="number" formControlName="order" placeholder="1, 2, 3...">
+              </div>
+              <div *ngIf="isFieldInvalid(footerForm, 'order')" class="error-modern">
+                Ordem é obrigatória (mínimo 1)
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <label>Chave de Tradução (Opcional)</label>
+              <div class="input-wrapper">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="translateKey"
+                  placeholder="Ex: menu-conheca, canal.denuncias">
+              </div>
+            </div>
+
+            <div class="form-group-modern">
+              <label class="uk-flex uk-flex-middle gap-small cursor-pointer">
+                <input class="uk-checkbox" type="checkbox" formControlName="targetBlank">
+                <span>Abrir link em nova aba (_blank)</span>
+              </label>
+            </div>
+
+            <div class="form-actions-modern">
+              <button type="submit" class="btn-primary" [disabled]="loading">
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>{{ editingFooterId ? 'Actualizar Item' : 'Adicionar Item' }}</span>
+              </button>
+              <button type="button" *ngIf="editingFooterId" (click)="resetFooterForm()" class="btn-secondary">
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="list-card card">
+          <div class="card-header space-between-wrap">
+            <h3>Itens de Rodapé ({{ (footerItems$ | async)?.length || 0 }})</h3>
+            <button type="button" class="uk-button uk-button-small uk-button-default uk-border-rounded"
+              (click)="onSeedDefaultFooterItems()" [disabled]="loading">
+              <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              <span>Restaurar Padrões de Rodapé</span>
+            </button>
+          </div>
+
+          <div class="filter-strip">
+            <button type="button" class="uk-button uk-button-small uk-border-pill"
+              [class.uk-button-primary]="selectedFooterSectionFilter === 'all'"
+              [class.uk-button-default]="selectedFooterSectionFilter !== 'all'"
+              (click)="selectedFooterSectionFilter = 'all'">
+              Todos
+            </button>
+            <button type="button" *ngFor="let sec of footerSections"
+              class="uk-button uk-button-small uk-border-pill"
+              [class.uk-button-primary]="selectedFooterSectionFilter === sec.value"
+              [class.uk-button-default]="selectedFooterSectionFilter !== sec.value"
+              (click)="selectedFooterSectionFilter = sec.value">
+              {{ sec.label.split(' (')[0] }}
+            </button>
+          </div>
+
+          <div class="items-container" *ngIf="footerItems$ | async as footerList">
+            <div *ngIf="filterFooterItems(footerList).length === 0" class="empty-state">
+              <div class="empty-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="3" y1="15" x2="21" y2="15"/>
+                </svg>
+              </div>
+              <p>Nenhum item nesta secção do rodapé para a operação actual.</p>
+              <small>Adicione novos itens usando o formulário à esquerda.</small>
+            </div>
+
+            <div *ngFor="let item of filterFooterItems(footerList)" class="item-card-modern">
               <div class="item-content">
-                <div class="item-title">{{ item.title }}</div>
+                <div class="item-title">
+                  {{ item.title }}
+                  <span class="badge badge-section">
+                    {{ getFooterSectionLabel(item.section).split(' (')[0] }}
+                  </span>
+                  <span class="badge badge-order">
+                    #{{ item.order || 1 }}
+                  </span>
+                </div>
                 <div class="item-meta">
-                  <span class="badge badge-link">{{ item.link }}</span>
+                  <span class="badge badge-url">{{ item.link || '(sem link)' }}</span>
+                  <span *ngIf="item.translateKey" class="badge badge-i18n">
+                    i18n: {{ item.translateKey }}
+                  </span>
                 </div>
               </div>
               <div class="item-actions-modern">
-                <button (click)="editFooterItem(item)" class="action-btn edit-btn" title="Edit">
-                  ✏️
+                <button (click)="editFooterItem(item)" class="action-btn edit-btn" title="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
                 </button>
-                <button (click)="deleteFooterItem(item.id)" class="action-btn delete-btn" title="Delete">
-                  🗑️
+                <button (click)="deleteFooterItem(item.id)" class="action-btn delete-btn" title="Eliminar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -293,52 +476,53 @@
       <div class="panel-grid">
         <div class="form-card card">
           <div class="card-header">
-            <h3>{{ editingLogosId ? 'Edit Site Logos' : 'Add Site Logos' }}</h3>
+            <h3>{{ editingLogosId ? 'Editar Logotipos do Site' : 'Adicionar Logotipos do Site' }}</h3>
           </div>
           <form [formGroup]="logosForm" (ngSubmit)="onSubmitLogos()">
             <div class="form-group-modern">
-              <label>Navbar Logo URL</label>
+              <label>Logo Navbar (Cabeçalho)</label>
               <div class="input-wrapper">
-                <span class="input-icon">🏢</span>
-                <input class="uk-width-1-2" type="url" formControlName="navbarLogoUrl"
-                  placeholder="/assets/logos/navbar-logo.png">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="navbarLogoUrl"
+                  placeholder="/img/telcables/svg/v2/telcables-europa.svg">
               </div>
               <div *ngIf="isFieldInvalid(logosForm, 'navbarLogoUrl')" class="error-modern">
-                Navbar logo URL is required
+                URL do logo da navbar é obrigatório
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Footer Logo URL</label>
+              <label>Logo Footer (Rodapé)</label>
               <div class="input-wrapper">
-                <span class="input-icon">🏷️</span>
-                <input class="uk-width-1-2" type="url" formControlName="footerLogoUrl"
-                  placeholder="/assets/logos/footer-logo.png">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="footerLogoUrl"
+                  placeholder="/img/telcables/svg/v2/telcables-europa.svg">
               </div>
               <div *ngIf="isFieldInvalid(logosForm, 'footerLogoUrl')" class="error-modern">
-                Footer logo URL is required
+                URL do logo do rodapé é obrigatório
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Mobile Logo URL</label>
+              <label>Logo Mobile</label>
               <div class="input-wrapper">
-                <span class="input-icon">📱</span>
-                <input class="uk-width-1-2" type="url" formControlName="mobileLogoUrl"
-                  placeholder="/assets/logos/mobile-logo.png">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="mobileLogoUrl"
+                  placeholder="/img/telcables/svg/v2/telcables-europa.svg">
               </div>
               <div *ngIf="isFieldInvalid(logosForm, 'mobileLogoUrl')" class="error-modern">
-                Mobile logo URL is required
+                URL do logo mobile é obrigatório
               </div>
             </div>
 
             <div class="form-actions-modern">
               <button type="submit" class="btn-primary" [disabled]="loading">
-                <span class="btn-icon">{{ editingLogosId ? '🔄' : '💾' }}</span>
-                {{ editingLogosId ? 'Update Logos' : 'Save Logos' }}
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>{{ editingLogosId ? 'Actualizar Logos' : 'Guardar Logos' }}</span>
               </button>
               <button type="button" *ngIf="editingLogosId" (click)="resetLogosForm()" class="btn-secondary">
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -346,36 +530,54 @@
 
         <div class="list-card card">
           <div class="card-header">
-            <div class="card-icon">🎨</div>
-            <h3>Site Logos ({{ (siteLogos$ | async)?.length || 0 }})</h3>
+            <h3>Logotipos Registados ({{ (siteLogos$ | async)?.length || 0 }})</h3>
           </div>
           <div class="items-container">
             <div *ngIf="(siteLogos$ | async)?.length === 0" class="empty-state">
-              <div class="empty-icon">🎨</div>
-              <p>No logos configured yet</p>
-              <small>Add your website logos using the form</small>
+              <div class="empty-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+              <p>Nenhum logotipo configurado para esta operação.</p>
+              <small>Adicione os URLs de logotipos ou use "Inicializar Defaults".</small>
             </div>
+
             <div *ngFor="let item of siteLogos$ | async" class="logo-card-modern">
               <div class="logo-preview-grid">
                 <div class="logo-preview-item">
-                  <span class="preview-label">Navbar Logo</span>
-                  <img [src]="item.navbarLogoUrl" class="logo-img" alt="Navbar Logo">
+                  <span class="preview-label">Navbar</span>
+                  <div class="logo-box">
+                    <img [src]="item.navbarLogoUrl" class="logo-img" alt="Navbar Logo" />
+                  </div>
                 </div>
                 <div class="logo-preview-item">
-                  <span class="preview-label">Footer Logo</span>
-                  <img [src]="item.footerLogoUrl" class="logo-img" alt="Footer Logo">
+                  <span class="preview-label">Footer</span>
+                  <div class="logo-box">
+                    <img [src]="item.footerLogoUrl" class="logo-img" alt="Footer Logo" />
+                  </div>
                 </div>
                 <div class="logo-preview-item">
-                  <span class="preview-label">Mobile Logo</span>
-                  <img [src]="item.mobileLogoUrl" class="logo-img" alt="Mobile Logo">
+                  <span class="preview-label">Mobile</span>
+                  <div class="logo-box">
+                    <img [src]="item.mobileLogoUrl" class="logo-img" alt="Mobile Logo" />
+                  </div>
                 </div>
               </div>
               <div class="item-actions-modern">
-                <button (click)="editLogosItem(item)" class="action-btn edit-btn" title="Edit">
-                  ✏️
+                <button (click)="editLogosItem(item)" class="action-btn edit-btn" title="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
                 </button>
-                <button (click)="deleteLogosItem(item.id)" class="action-btn delete-btn" title="Delete">
-                  🗑️
+                <button (click)="deleteLogosItem(item.id)" class="action-btn delete-btn" title="Eliminar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -389,41 +591,42 @@
       <div class="panel-grid">
         <div class="form-card card">
           <div class="card-header">
-            <div class="card-icon">📱</div>
-            <h3>{{ editingSocialId ? 'Edit Social Media' : 'Add Social Media' }}</h3>
+            <h3>{{ editingSocialId ? 'Editar Rede Social' : 'Adicionar Rede Social' }}</h3>
           </div>
           <form [formGroup]="socialForm" (ngSubmit)="onSubmitSocial()">
             <div class="form-group-modern">
-              <label>Platform</label>
+              <label>Plataforma</label>
               <div class="input-wrapper">
-                <span class="input-icon">🌐</span>
-                <input class="uk-width-1-2" type="text" formControlName="title"
-                  placeholder="e.g., Facebook, Twitter, Instagram">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="title"
+                  placeholder="Ex: LinkedIn, Twitter / X, Instagram, Facebook, YouTube">
               </div>
               <div *ngIf="isFieldInvalid(socialForm, 'title')" class="error-modern">
-                Platform name is required
+                Nome da plataforma é obrigatório
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Profile URL</label>
+              <label>URL do Perfil</label>
               <div class="input-wrapper">
-                <span class="input-icon">🔗</span>
-                <input class="uk-width-1-2" type="url" formControlName="link"
-                  placeholder="https://facebook.com/yourpage">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="url" formControlName="link"
+                  placeholder="https://linkedin.com/company/telcables-europe/">
               </div>
               <div *ngIf="isFieldInvalid(socialForm, 'link')" class="error-modern">
-                Valid URL is required (must start with http:// or https://)
+                URL válido é obrigatório (http:// ou https://)
               </div>
             </div>
 
             <div class="form-actions-modern">
               <button type="submit" class="btn-primary" [disabled]="loading">
-                <span class="btn-icon">{{ editingSocialId ? '🔄' : '➕' }}</span>
-                {{ editingSocialId ? 'Update Social Media' : 'Add Social Media' }}
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>{{ editingSocialId ? 'Actualizar Rede Social' : 'Adicionar Rede Social' }}</span>
               </button>
               <button type="button" *ngIf="editingSocialId" (click)="resetSocialForm()" class="btn-secondary">
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -431,32 +634,42 @@
 
         <div class="list-card card">
           <div class="card-header">
-            <h3>Social Media ({{ (socialMedia$ | async)?.length || 0 }})</h3>
+            <h3>Redes Sociais ({{ (socialMedia$ | async)?.length || 0 }})</h3>
           </div>
           <div class="items-container">
             <div *ngIf="(socialMedia$ | async)?.length === 0" class="empty-state">
-              <div class="empty-icon">📱</div>
-              <p>No social media links yet</p>
-              <small>Add your social media profiles</small>
+              <div class="empty-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+              </div>
+              <p>Nenhuma rede social registada para esta subsidiária.</p>
+              <small>Cadastre os perfis institucionais.</small>
             </div>
+
             <div *ngFor="let item of socialMedia$ | async" class="item-card-modern">
               <div class="item-content">
                 <div class="item-title">
-                  <span class="social-icon" [class]="'social-' + item.title.toLowerCase()">
-                    {{ getSocialIcon(item.title) }}
-                  </span>
-                  {{ item.title }}
+                  <span class="social-tag">{{ item.title }}</span>
                 </div>
                 <div class="item-meta">
-                  <a [href]="item.link" target="_blank" class="social-link">{{ item.link }}</a>
+                  <a [href]="item.link" target="_blank" rel="noopener" class="social-link">{{ item.link }}</a>
                 </div>
               </div>
               <div class="item-actions-modern">
-                <button (click)="editSocialItem(item)" class="action-btn edit-btn" title="Edit">
-                  ✏️
+                <button (click)="editSocialItem(item)" class="action-btn edit-btn" title="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
                 </button>
-                <button (click)="deleteSocialItem(item.id)" class="action-btn delete-btn" title="Delete">
-                  🗑️
+                <button (click)="deleteSocialItem(item.id)" class="action-btn delete-btn" title="Eliminar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -470,60 +683,60 @@
       <div class="panel-grid">
         <div class="form-card card">
           <div class="card-header">
-            <h3>{{ editingAddressId ? 'Edit Address' : 'Add New Address' }}</h3>
+            <h3>{{ editingAddressId ? 'Editar Endereço' : 'Adicionar Novo Endereço' }}</h3>
           </div>
           <form [formGroup]="addressesForm" (ngSubmit)="onSubmitAddress()">
             <div class="form-group-modern">
-              <label>Title</label>
+              <label>Identificador / Título</label>
               <div class="input-wrapper">
-                <span class="input-icon">🏷️</span>
-                <input class="uk-width-1-2" type="text" formControlName="title"
-                  placeholder="e.g., Main Office, Support Center">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="title"
+                  placeholder="Ex: Escritório de Lisboa / Carcavelos, Sede Luanda">
               </div>
               <div *ngIf="isFieldInvalid(addressesForm, 'title')" class="error-modern">
-                Title is required
+                Título é obrigatório
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Address</label>
+              <label>Endereço Completo</label>
               <div class="input-wrapper">
-                <span class="input-icon">📍</span>
-                <textarea class="uk-width-1-2" formControlName="addressName" rows="3"
-                  placeholder="Full address"></textarea>
+                <textarea class="uk-textarea uk-border-rounded uk-width-1-1" formControlName="addressName" rows="3"
+                  placeholder="Rua, Edifício, Cidade, País"></textarea>
               </div>
               <div *ngIf="isFieldInvalid(addressesForm, 'addressName')" class="error-modern">
-                Address is required
+                Endereço é obrigatório
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Phone (optional)</label>
+              <label>Telefone (Opcional)</label>
               <div class="input-wrapper">
-                <span class="input-icon">📞</span>
-                <input class="uk-width-1-2" type="tel" formControlName="phone" placeholder="+55 11 99999-9999">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="tel" formControlName="phone" placeholder="+351 210 993 300">
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Contact Email</label>
+              <label>Email de Contacto</label>
               <div class="input-wrapper">
-                <span class="input-icon">✉️</span>
-                <input class="uk-width-1-2" type="email" formControlName="contactEmail"
-                  placeholder="contact@company.com">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="email" formControlName="contactEmail"
+                  placeholder="info@telcables.pt">
               </div>
               <div *ngIf="isFieldInvalid(addressesForm, 'contactEmail')" class="error-modern">
-                Valid email is required
+                Email de contacto válido é obrigatório
               </div>
             </div>
 
             <div class="form-actions-modern">
               <button type="submit" class="btn-primary" [disabled]="loading">
-                <span class="btn-icon">{{ editingAddressId ? '🔄' : '➕' }}</span>
-                {{ editingAddressId ? 'Update Address' : 'Add Address' }}
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>{{ editingAddressId ? 'Actualizar Endereço' : 'Adicionar Endereço' }}</span>
               </button>
               <button type="button" *ngIf="editingAddressId" (click)="resetAddressForm()" class="btn-secondary">
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -531,31 +744,49 @@
 
         <div class="list-card card">
           <div class="card-header">
-            <div class="card-icon">🏢</div>
-            <h3>Addresses ({{ (addresses$ | async)?.length || 0 }})</h3>
+            <h3>Endereços Registados ({{ (addresses$ | async)?.length || 0 }})</h3>
           </div>
           <div class="items-container">
             <div *ngIf="(addresses$ | async)?.length === 0" class="empty-state">
-              <div class="empty-icon">📍</div>
-              <p>No addresses added yet</p>
-              <small>Add your office or support addresses</small>
+              <div class="empty-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <p>Nenhum endereço cadastrado para esta operação.</p>
+              <small>Cadastre a localização do escritório regional.</small>
             </div>
+
             <div *ngFor="let item of addresses$ | async" class="address-card-modern">
               <div class="address-header">
-                <span class="address-icon">📍</span>
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
                 <h4>{{ item.title }}</h4>
               </div>
               <div class="address-details">
-                <p>{{ item.addressName }}</p>
-                <p *ngIf="item.phone"><span class="detail-icon">📞</span> {{ item.phone }}</p>
-                <p><span class="detail-icon">✉️</span> {{ item.contactEmail }}</p>
+                <p class="address-street">{{ item.addressName }}</p>
+                <p *ngIf="item.phone" class="address-phone">
+                  <span class="detail-label">Tel:</span> {{ item.phone }}
+                </p>
+                <p class="address-email">
+                  <span class="detail-label">Email:</span> {{ item.contactEmail }}
+                </p>
               </div>
               <div class="item-actions-modern">
-                <button (click)="editAddressItem(item)" class="action-btn edit-btn" title="Edit">
-                  ✏️
+                <button (click)="editAddressItem(item)" class="action-btn edit-btn" title="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
                 </button>
-                <button (click)="deleteAddressItem(item.id)" class="action-btn delete-btn" title="Delete">
-                  🗑️
+                <button (click)="deleteAddressItem(item.id)" class="action-btn delete-btn" title="Eliminar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -569,42 +800,43 @@
       <div class="panel-grid">
         <div class="form-card card">
           <div class="card-header">
-            <div class="card-icon">🤝</div>
-            <h3>{{ editingPartnerId ? 'Edit Partner' : 'Add New Partner' }}</h3>
+            <h3>{{ editingPartnerId ? 'Editar Parceiro' : 'Adicionar Novo Parceiro' }}</h3>
           </div>
           <form [formGroup]="partnersForm" (ngSubmit)="onSubmitPartner()">
             <div class="form-group-modern">
-              <label>Partner Logo URL</label>
+              <label>Logo do Parceiro (URL)</label>
               <div class="input-wrapper">
-                <span class="input-icon">🖼️</span>
-                <input class="uk-width-1-2" type="url" formControlName="partnersLogo"
-                  placeholder="/assets/partners/partner-logo.png">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="url" formControlName="partnersLogo"
+                  placeholder="https://exemplo.com/logo-parceiro.png">
               </div>
               <div *ngIf="isFieldInvalid(partnersForm, 'partnersLogo')" class="error-modern">
-                Partner logo URL is required
+                URL do logo é obrigatório
               </div>
               <img *ngIf="partnersForm.get('partnersLogo')?.value" [src]="partnersForm.get('partnersLogo')?.value"
-                class="preview-image-modern">
+                class="preview-image-modern" alt="Preview parceiro" />
             </div>
 
             <div class="form-group-modern">
-              <label>Partner Website URL</label>
+              <label>Website do Parceiro (URL)</label>
               <div class="input-wrapper">
-                <span class="input-icon">🔗</span>
-                <input class="uk-width-1-2" type="url" formControlName="partnerUrl" placeholder="https://partner.com">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="url" formControlName="partnerUrl" placeholder="https://parceiro.com">
               </div>
               <div *ngIf="isFieldInvalid(partnersForm, 'partnerUrl')" class="error-modern">
-                Valid URL is required
+                URL válido é obrigatório
               </div>
             </div>
 
             <div class="form-actions-modern">
               <button type="submit" class="btn-primary" [disabled]="loading">
-                <span class="btn-icon">{{ editingPartnerId ? '🔄' : '🤝' }}</span>
-                {{ editingPartnerId ? 'Update Partner' : 'Add Partner' }}
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>{{ editingPartnerId ? 'Actualizar Parceiro' : 'Adicionar Parceiro' }}</span>
               </button>
               <button type="button" *ngIf="editingPartnerId" (click)="resetPartnerForm()" class="btn-secondary">
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -612,29 +844,45 @@
 
         <div class="list-card card">
           <div class="card-header">
-            <div class="card-icon">🤝</div>
-            <h3>Partners ({{ (partners$ | async)?.length || 0 }})</h3>
+            <h3>Parceiros ({{ (partners$ | async)?.length || 0 }})</h3>
           </div>
           <div class="partners-grid-modern">
             <div *ngIf="(partners$ | async)?.length === 0" class="empty-state full-width">
-              <div class="empty-icon">🤝</div>
-              <p>No partners added yet</p>
-              <small>Add your business partners</small>
+              <div class="empty-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+              </div>
+              <p>Nenhum parceiro registado para esta subsidiária.</p>
+              <small>Adicione os logotipos dos parceiros regionais.</small>
             </div>
+
             <div *ngFor="let item of partners$ | async; let i = index" class="partner-card-modern">
               <div class="partner-logo-wrapper">
-                <img [src]="item.partnersLogo" [alt]="'Partner ' + (i+1)" class="partner-logo-modern">
+                <img [src]="item.partnersLogo" [alt]="'Parceiro ' + (i+1)" class="partner-logo-modern">
               </div>
-              <a [href]="item.partnerUrl" target="_blank" class="partner-link-modern">
-                Visit Website <span>→</span>
+              <a [href]="item.partnerUrl" target="_blank" rel="noopener" class="partner-link-modern">
+                <span>Visitar Website</span>
+                <svg class="icon-inline-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
               </a>
               <div class="item-actions-modern">
-                <button (click)="editPartnerItem(item)" class="action-btn edit-btn" title="Edit">
-                  ✏️
+                <button (click)="editPartnerItem(item)" class="action-btn edit-btn" title="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
                 </button>
-                <button (click)="deletePartnerItem(item.id || i.toString())" class="action-btn delete-btn"
-                  title="Delete">
-                  🗑️
+                <button (click)="deletePartnerItem(item.id || i.toString())" class="action-btn delete-btn" title="Eliminar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -648,123 +896,113 @@
       <div class="panel-grid">
         <div class="form-card card">
           <div class="card-header">
-            <h3>{{ editingHeroId ? 'Edit Hero Slide' : 'Add New Hero Slide' }}</h3>
+            <h3>{{ editingHeroId ? 'Editar Hero Slide' : 'Adicionar Novo Hero Slide' }}</h3>
           </div>
           <form [formGroup]="heroForm" (ngSubmit)="onSubmitHero()">
             
-            <div style="background: rgba(0,0,0,0.02); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-              <h4 style="margin-top: 0; margin-bottom: 10px; color: #444;">Slide Media Assets</h4>
+            <div class="media-assets-box">
+              <h4 class="media-box-title">Recursos Multimédia do Slide</h4>
               
               <!-- Fallback Image -->
               <div class="form-group-modern">
-                <label>Fallback Image / Video Poster URL</label>
+                <label>Imagem de Fundo / Poster do Vídeo (URL)</label>
                 <div class="input-wrapper">
-                  <span class="input-icon">🖼️</span>
-                  <input class="uk-width-1-2" type="url" formControlName="imageUrl" placeholder="/assets/hero/slide-fallback.jpg">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="url" formControlName="imageUrl" placeholder="https://dominio.com/slide-bg.jpg">
                 </div>
                 <div *ngIf="isFieldInvalid(heroForm, 'imageUrl')" class="error-modern">
-                  Fallback image URL is required (used while video loads or as a backup).
+                  URL da imagem de fundo é obrigatório.
                 </div>
                 <img *ngIf="heroForm.get('imageUrl')?.value" [src]="heroForm.get('imageUrl')?.value"
-                  class="preview-image-modern hero-preview-modern" style="max-height: 100px; margin-top: 5px;">
+                  class="preview-image-modern hero-preview-modern" alt="Preview imagem slide" />
               </div>
 
               <!-- Background Video -->
-              <div class="form-group-modern" style="margin-top: 15px;">
-                <label>Background Video URL (MP4)</label>
+              <div class="form-group-modern">
+                <label>Vídeo de Fundo MP4 (Opcional)</label>
                 <div class="input-wrapper">
-                  <span class="input-icon">🎥</span>
-                  <input class="uk-width-1-1" type="url" formControlName="videoUrl" placeholder="https://domain.com/video.mp4">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="url" formControlName="videoUrl" placeholder="https://dominio.com/video.mp4">
                 </div>
-                <small style="color: #888; font-size: 11px;">Opcional: Se preenchido, substitui a imagem de fundo com este vídeo em loop.</small>
+                <small class="hint-text">Opcional: Se preenchido, reproduz este vídeo em loop no fundo da secção inicial.</small>
               </div>
 
-              <!-- NEW: Upcoming Event Image & Link -->
-              <div class="form-group-modern" style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 15px;">
-                <label>Upcoming Event Image URL</label>
-                <div class="input-wrapper">
-                  <span class="input-icon">📅</span>
-                  <input class="uk-width-1-1" type="url" formControlName="upEventImageUrl" placeholder="https://domain.com/event-banner.jpg">
+              <!-- Upcoming Event Image & Link -->
+              <div class="event-banner-subbox">
+                <label class="uk-text-bold">Banner de Evento em Destaque (Opcional)</label>
+                <div class="input-wrapper uk-margin-small-top">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="url" formControlName="upEventImageUrl" placeholder="https://dominio.com/evento-banner.jpg">
                 </div>
-                <small style="color: #888; font-size: 11px;">Opcional: Imagem do evento a exibir no slide.</small>
-
-                <div *ngIf="heroForm.get('upEventImageUrl')?.value" style="margin-top: 5px;">
-                  <img [src]="heroForm.get('upEventImageUrl')?.value" class="preview-image-modern hero-preview-modern" style="max-height: 100px; border-radius: 4px;">
+                <div *ngIf="heroForm.get('upEventImageUrl')?.value" class="uk-margin-small-top">
+                  <img [src]="heroForm.get('upEventImageUrl')?.value" class="preview-image-modern hero-preview-modern" alt="Banner evento" />
                 </div>
 
-                <label style="margin-top: 10px; display: block;">Upcoming Event Link / URL</label>
+                <label class="uk-margin-small-top uk-display-block">Link do Evento em Destaque</label>
                 <div class="input-wrapper">
-                  <span class="input-icon">🔗</span>
-                  <input class="uk-width-1-1" type="url" formControlName="upEventUrl" placeholder="https://domain.com/events/upcoming-event">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="url" formControlName="upEventUrl" placeholder="https://dominio.com/eventos/proximo-evento">
                 </div>
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Title</label>
+              <label>Título Principal</label>
               <div class="input-wrapper">
-                <span class="input-icon">📝</span>
-                <input class="uk-width-1-2" type="text" formControlName="title" placeholder="Main title">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="title" placeholder="Título em destaque no slide">
               </div>
               <div *ngIf="isFieldInvalid(heroForm, 'title')" class="error-modern">
-                Title is required
+                Título é obrigatório
               </div>
             </div>
 
             <div class="form-group-modern">
-              <label>Subtitle</label>
+              <label>Subtítulo / Descrição</label>
               <div class="input-wrapper">
-                <span class="input-icon">📄</span>
-                <input class="uk-width-1-2" type="text" formControlName="subtitle" placeholder="Subtitle text">
+                <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="subtitle" placeholder="Subtítulo ou mensagem institucional">
               </div>
               <div *ngIf="isFieldInvalid(heroForm, 'subtitle')" class="error-modern">
-                Subtitle is required
+                Subtítulo é obrigatório
               </div>
             </div>
 
-            <div class="form-row-modern">
+            <div class="form-row-grid">
               <div class="form-group-modern">
-                <label>Button 1 Text</label>
+                <label>Botão 1 - Texto</label>
                 <div class="input-wrapper">
-                  <span class="input-icon">🔘</span>
-                  <input class="uk-width-1-2" type="text" formControlName="ctaBtnText" placeholder="Learn More">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="ctaBtnText" placeholder="Ex: Saber Mais">
                 </div>
-                <div *ngIf="isFieldInvalid(heroForm, 'ctaBtnText')" class="error-modern">Required</div>
+                <div *ngIf="isFieldInvalid(heroForm, 'ctaBtnText')" class="error-modern">Obrigatório</div>
                 
-                <label style="margin-top: 5px; display:block;">Button 1 URL</label>
+                <label class="uk-margin-small-top uk-display-block">Botão 1 - URL</label>
                 <div class="input-wrapper">
-                  <span class="input-icon">🔗</span>
-                  <input class="uk-width-1-2" type="text" formControlName="ctaUrl" placeholder="/about">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="ctaUrl" placeholder="/servicos">
                 </div>
-                <div *ngIf="isFieldInvalid(heroForm, 'ctaUrl')" class="error-modern">Required</div>
+                <div *ngIf="isFieldInvalid(heroForm, 'ctaUrl')" class="error-modern">Obrigatório</div>
               </div>
-            </div>
 
-            <div class="form-row-modern" style="margin-top: 10px;">
               <div class="form-group-modern">
-                <label>Button 2 Text</label>
+                <label>Botão 2 - Texto</label>
                 <div class="input-wrapper">
-                  <span class="input-icon">🔘</span>
-                  <input class="uk-width-1-2" type="text" formControlName="ctaBtn2Text" placeholder="Contact Us">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="ctaBtn2Text" placeholder="Ex: Fale Conosco">
                 </div>
-                <div *ngIf="isFieldInvalid(heroForm, 'ctaBtn2Text')" class="error-modern">Required</div>
+                <div *ngIf="isFieldInvalid(heroForm, 'ctaBtn2Text')" class="error-modern">Obrigatório</div>
                 
-                <label style="margin-top: 5px; display:block;">Button 2 URL</label>
+                <label class="uk-margin-small-top uk-display-block">Botão 2 - URL</label>
                 <div class="input-wrapper">
-                  <span class="input-icon">🔗</span>
-                  <input class="uk-width-1-2" type="text" formControlName="cta2Url" placeholder="/contact">
+                  <input class="uk-input uk-border-rounded uk-width-1-1" type="text" formControlName="cta2Url" placeholder="/contacto">
                 </div>
-                <div *ngIf="isFieldInvalid(heroForm, 'cta2Url')" class="error-modern">Required</div>
+                <div *ngIf="isFieldInvalid(heroForm, 'cta2Url')" class="error-modern">Obrigatório</div>
               </div>
             </div>
 
-            <div class="form-actions-modern" style="margin-top: 20px;">
+            <div class="form-actions-modern">
               <button type="submit" class="btn-primary" [disabled]="loading">
-                <span class="btn-icon">{{ editingHeroId ? '🔄' : '➕' }}</span>
-                {{ editingHeroId ? 'Update Slide' : 'Add Slide' }}
+                <svg class="icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                <span>{{ editingHeroId ? 'Actualizar Slide' : 'Adicionar Slide' }}</span>
               </button>
               <button type="button" *ngIf="editingHeroId" (click)="resetHeroForm()" class="btn-secondary">
-                Cancel
+                Cancelar
               </button>
             </div>
           </form>
@@ -776,12 +1014,18 @@
           </div>
           <div class="hero-slides-modern">
             <div *ngIf="(heroSlides$ | async)?.length === 0" class="empty-state">
-              <p>No hero slides yet</p>
-              <small>Add slides for your hero slider</small>
+              <div class="empty-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </div>
+              <p>Nenhum slide configurado para o carrossel inicial desta operação.</p>
+              <small>Cadastre o primeiro slide usando o formulário à esquerda.</small>
             </div>
+
             <div *ngFor="let item of heroSlides$ | async" class="hero-slide-modern">
               <div class="slide-preview">
-                <img [src]="item.imageUrl" [alt]="item.title" class="slide-image">
+                <img [src]="item.imageUrl" [alt]="item.title" class="slide-image" />
                 <div class="slide-overlay"></div>
                 <div class="slide-content">
                   <h4>{{ item.title }}</h4>
@@ -793,8 +1037,18 @@
                 </div>
               </div>
               <div class="item-actions-modern">
-                <button (click)="editHeroItem(item)" class="action-btn edit-btn" title="Edit">✏️</button>
-                <button (click)="deleteHeroItem(item.id)" class="action-btn delete-btn" title="Delete">🗑️</button>
+                <button (click)="editHeroItem(item)" class="action-btn edit-btn" title="Editar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
+                </button>
+                <button (click)="deleteHeroItem(item.id)" class="action-btn delete-btn" title="Eliminar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
               </div>
             </div>
           </div>
@@ -802,5 +1056,6 @@
 
       </div>
     </div>
-   </div>
+
+  </div>
 </div>

@@ -1,45 +1,216 @@
-<div class="uk-container uk-margin-top uk-margin-bottom">
+@if (cmsMode) {
+  <!-- ==================== MODO CMS (Compacto, Filtrado pela Operação e Paginado) ==================== -->
   @if (vagas$ | async; as vagas) {
-  @if (vagas.length > 0) {
-  <div class="uk-grid uk-child-width-1-3@m uk-grid-medium" uk-grid>
-    @for (vaga of vagas; track vaga.id) {
-    <div>
-      <div class="uk-card uk-card-body uk-padding-remove">
-        <div class="uk-height-medium uk-width-medium border uk-background-cover uk-flex uk-flex-bottom uk-light"
-          style="aspect-ratio: 1/1; cursor: pointer;" [style.background-image]="'url(' + vaga.imageUrl + ')'"
-          (click)="openModal(vaga)">
-          <div class="uk-padding-small gradiente-nome-vaga uk-border-rounded uk-text-left">
-            <b style="color:#fff ; " class="uk-card-title uk-text-left">{{ vaga.posicao }}</b>
+    <div class="cms-list-card">
+      <div class="cms-list-header">
+        <div class="cms-list-title-group">
+          <span class="cms-form-icon-box" aria-hidden="true">
+            <svg class="cms-title-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+          </span>
+          <div>
+            <div class="cms-list-heading-row">
+              <h3 class="cms-list-title">Vagas Abertas</h3>
+              <span class="cms-count-pill">{{ vagas.length }}</span>
+            </div>
+            <p class="cms-form-subtitle">Filtradas pela operação seleccionada</p>
           </div>
         </div>
+
+        <div class="cms-op-destination-pill" title="Operação activa">
+          <img [src]="cmsSiteService.activeSiteConfig().logoSvg" [alt]="cmsSiteService.activeSiteConfig().name" class="cms-op-destination-logo" />
+          <code class="cms-op-destination-code">{{ selectedCollection }}</code>
+        </div>
+      </div>
+
+      @if (vagas.length > 0) {
+        <div class="cms-list-toolbar">
+          <div class="cms-search-box">
+            <span class="cms-search-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </span>
+            <input
+              type="text"
+              class="cms-search-input"
+              placeholder="Filtrar por cargo ou departamento..."
+              [(ngModel)]="searchQuery"
+              (ngModelChange)="onSearchChange()"
+            />
+            @if (searchQuery) {
+              <button type="button" class="cms-search-clear" (click)="clearSearch()" title="Limpar filtro">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            }
+          </div>
+        </div>
+
+        @let filtered = filterItems(vagas);
+        @let totalPages = getTotalPages(filtered.length);
+        @let pageItems = getPaginatedItems(filtered);
+
+        @if (filtered.length > 0) {
+          <ul class="cms-list-items">
+            @for (vaga of pageItems; track vaga.id) {
+              <li class="cms-list-row">
+                <div class="cms-row-main">
+                  <div class="cms-row-thumb">
+                    @if (vaga.imageUrl) {
+                      <img [src]="vaga.imageUrl" [alt]="vaga.posicao" loading="lazy" />
+                    } @else {
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                      </svg>
+                    }
+                  </div>
+
+                  <div class="cms-row-info">
+                    <span class="cms-row-title" [title]="vaga.posicao">{{ vaga.posicao }}</span>
+                    <div class="cms-row-meta">
+                      @if (vaga.departamento) {
+                        <span class="cms-meta-chip is-accent" [title]="vaga.departamento">{{ vaga.departamento }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cms-row-actions">
+                  <button type="button" class="cms-action-btn is-view" (click)="openModal(vaga)" title="Ver detalhes da vaga">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <span>Ver</span>
+                  </button>
+                  <button type="button" class="cms-action-btn is-delete" (click)="deleteVaga(vaga, $event)" title="Eliminar vaga">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                    <span>Eliminar</span>
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+
+          <div class="cms-pagination-bar">
+            <div class="cms-pagination-info">
+              <span><strong>{{ getRangeStart(filtered.length) }}–{{ getRangeEnd(filtered.length) }}</strong> de <strong>{{ filtered.length }}</strong></span>
+              <select class="cms-pagesize-select" [(ngModel)]="pageSize" (ngModelChange)="onPageSizeChange()" aria-label="Itens por página">
+                @for (opt of pageSizeOptions; track opt) {
+                  <option [ngValue]="opt">{{ opt }} / pág</option>
+                }
+              </select>
+            </div>
+
+            @if (totalPages > 1) {
+              <nav class="cms-pagination-controls" aria-label="Paginação de vagas">
+                <button type="button" class="cms-page-btn" [disabled]="currentPage <= 1" (click)="goToPage(currentPage - 1, totalPages)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                </button>
+                @for (page of getPages(totalPages); track page) {
+                  <button type="button" class="cms-page-btn" [class.is-active]="page === currentPage" (click)="goToPage(page, totalPages)">
+                    {{ page }}
+                  </button>
+                }
+                <button type="button" class="cms-page-btn" [disabled]="currentPage >= totalPages" (click)="goToPage(currentPage + 1, totalPages)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </nav>
+            }
+          </div>
+        } @else {
+          <div class="cms-empty-state">
+            <div class="cms-empty-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <h4 class="cms-empty-title">Sem resultados para "{{ searchQuery }}"</h4>
+            <p class="cms-empty-desc">Tente outro termo de pesquisa.</p>
+          </div>
+        }
+      } @else {
+        <div class="cms-empty-state">
+          <div class="cms-empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+            </svg>
+          </div>
+          <h4 class="cms-empty-title">Sem vagas em {{ selectedCollection }}</h4>
+          <p class="cms-empty-desc">Abra a primeira vaga para {{ cmsSiteService.activeSiteConfig().name }}.</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="cms-list-card">
+      <div class="cms-empty-state">
+        <div uk-spinner="ratio: 0.9"></div>
       </div>
     </div>
+  }
+} @else {
+  <!-- ==================== MODO PÚBLICO ==================== -->
+  <div class="uk-container uk-margin-top uk-margin-bottom">
+    @if (vagas$ | async; as vagas) {
+      @if (vagas.length > 0) {
+        <div class="uk-grid uk-child-width-1-3@m uk-grid-medium" uk-grid>
+          @for (vaga of vagas; track vaga.id) {
+            <div>
+              <div class="uk-card uk-card-body uk-padding-remove">
+                <div class="uk-height-medium uk-width-medium border uk-background-cover uk-flex uk-flex-bottom uk-light"
+                  style="aspect-ratio: 1/1; cursor: pointer;" [style.background-image]="'url(' + vaga.imageUrl + ')'"
+                  (click)="openModal(vaga)">
+                  <div class="uk-padding-small gradiente-nome-vaga uk-border-rounded uk-text-left uk-width-1-1">
+                    <b style="color:#fff;" class="uk-card-title uk-text-left" [title]="vaga.posicao">{{ vaga.posicao }}</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="uk-text-center uk-margin-large-top uk-margin-large-bottom">
+          <p class="uk-text-large uk-margin-large-top uk-margin-large-bottom">Não existem vagas disponíveis! Regresse noutra altura</p>
+        </div>
+      }
+    } @else {
+      <div class="uk-flex uk-flex-center uk-margin-large-top">
+        <div uk-spinner></div>
+      </div>
     }
   </div>
-  } @else {
-  <div class="uk-text-center uk-margin-large-top uk-margin-large-bottom">
-    <p class="uk-text-large uk-margin-large-top uk-margin-large-bottom">Não existem vagas disponíveis! Regresse noutra
-      altura</p>
-  </div>
-  }
+}
 
-  <!-- Modal for vaga details -->
-  @if (selectedVaga) {
+<!-- Modal for vaga details -->
+@if (selectedVaga) {
   <div id="vaga-modal" uk-modal>
     <div class="uk-modal-dialog uk-border-rounded" style="border-radius: 15px; overflow: hidden;">
-      <!-- Modal header with image -->
       <div class="uk-position-relative uk-background-cover uk-light"
         [style.background-image]="'url(' + selectedVaga.imageUrl + ')'" style="height: 200px;">
-        <div class="uk-overlay  uk-position-bottom uk-padding-small"
+        <div class="uk-overlay uk-position-bottom uk-padding-small"
           style="background: linear-gradient(to top, rgba(0, 0, 78, 0.918), rgba(0, 0, 78, 0.918), rgba(0, 0, 255, 0));">
           <h2 style="font-weight: 800" class="uk-modal-title uk-margin-small-left">{{ selectedVaga.posicao }}</h2>
           <p class="uk-margin-remove">{{ selectedVaga.departamento }}</p>
         </div>
-        <button style="color:white; border-radius: 50%;  " class=" uk-modal-close-default uk-border-pill" type="button"
-          uk-close></button>
+        <button style="color:white; border-radius: 50%;" class="uk-modal-close-default uk-border-pill" type="button" uk-close></button>
       </div>
 
-      <!-- Modal body with responsibilities -->
       <div class="uk-modal-body uk-padding">
         <h4 class="uk-text-bold">Principais responsabilidades</h4>
         <div class="responsibilities-content" [innerHTML]="getSafeContent()"></div>
@@ -48,86 +219,40 @@
       <div class="uk-modal-footer uk-text-center" style="background: transparent; padding-bottom: 20px;">
         <button uk-toggle="target: #modal-vaga-form-1"
           class="uk-button uk-button-primary uk-width-1-1 uk-border-pill uk-margin-small-bottom"
-          style="padding: 12px; font-size: 16px; background: #1AB8DD; border: none; color:#02002B"><b>Se candidatar a
-            esta vaga</b></button>
+          style="padding: 12px; font-size: 16px; background: #1AB8DD; border: none; color:#02002B"><b>Se candidatar a esta vaga</b></button>
       </div>
     </div>
   </div>
 
   <div id="modal-vaga-form-1" uk-modal>
-    <div class="uk-modal-dialog uk-border-rounded  fundo-form  " style="border-radius: 15px; overflow: hidden;">
-      <!-- Corpo do modal -->
-      <div class="uk-modal-body ">
-        <div class="uk-width-expand  ">
+    <div class="uk-modal-dialog uk-border-rounded fundo-form" style="border-radius: 15px; overflow: hidden;">
+      <div class="uk-modal-body">
+        <div class="uk-width-expand">
           <form [formGroup]="contactForm" (ngSubmit)="submitForm($event)" class="uk-grid-small uk-padding" uk-grid>
             <h3 style="color:rgba(24, 24, 50, 1); font-weight: bold;">{{ selectedVaga.posicao }}</h3>
 
-            <!-- Primeiro Nome -->
             <div class="uk-width-1-2@s">
               <label class="uk-form-label" for="firstName">Primeiro Nome</label>
               <input style="background-color: #F0F0F8;" class="uk-input uk-border-rounded" id="firstName" type="text"
-                formControlName="firstName" required placeholder="" aria-label="">
-              <div
-                *ngIf="contactForm.get('firstName')?.invalid && (contactForm.get('firstName')?.dirty || contactForm.get('firstName')?.touched)"
-                class="uk-text-danger">
-                <ng-container *ngIf="contactForm.get('firstName')?.errors?.['required']">
-                  {{ 'campo_obrigatorio' | translate }}
-                </ng-container>
-                <ng-container *ngIf="contactForm.get('firstName')?.errors?.['pattern']">
-                  {{ 'formato_invalido' | translate }}
-                </ng-container>
-              </div>
+                formControlName="firstName" required />
             </div>
 
-            <!-- Último Nome -->
             <div class="uk-width-1-2@s">
               <label class="uk-form-label" for="lastName">Último Nome</label>
               <input style="background-color: #F0F0F8;" class="uk-input uk-border-rounded" id="lastName" type="text"
                 formControlName="lastName" required />
-              <div
-                *ngIf="contactForm.get('lastName')?.invalid && (contactForm.get('lastName')?.dirty || contactForm.get('lastName')?.touched)"
-                class="uk-text-danger">
-                <ng-container *ngIf="contactForm.get('lastName')?.errors?.['required']">
-                  {{ 'campo_obrigatorio' | translate }}
-                </ng-container>
-                <ng-container *ngIf="contactForm.get('lastName')?.errors?.['pattern']">
-                  {{ 'formato_invalido' | translate }}
-                </ng-container>
-              </div>
             </div>
 
-            <!-- E-mail -->
             <div class="uk-width-1-1">
               <label class="uk-form-label" for="email">E-mail</label>
               <input style="background-color: #F0F0F8;" class="uk-input uk-border-rounded" id="email" type="email"
                 formControlName="email" required />
-              <div
-                *ngIf="contactForm.get('email')?.invalid && (contactForm.get('email')?.dirty || contactForm.get('email')?.touched)"
-                class="uk-text-danger">
-                <ng-container *ngIf="contactForm.get('email')?.errors?.['required']">
-                  {{ 'campo_obrigatorio' | translate }}
-                </ng-container>
-                <ng-container *ngIf="contactForm.get('email')?.errors?.['pattern']">
-                  {{ 'formato_invalido_email' | translate }}
-                </ng-container>
-              </div>
             </div>
 
-            <!-- Mensagem -->
             <div class="uk-width-1-1">
               <label class="uk-form-label" for="message"><b>Mensagem</b></label>
               <textarea style="background-color: #F0F0F8;" class="uk-textarea uk-border-rounded" id="message" rows="5"
-                formControlName="message" required placeholder="" aria-label=""></textarea>
-              <div
-                *ngIf="contactForm.get('message')?.invalid && (contactForm.get('message')?.dirty || contactForm.get('message')?.touched)"
-                class="uk-text-danger">
-                <ng-container *ngIf="contactForm.get('message')?.errors?.['required']">
-                  {{ 'campo_obrigatorio' | translate }}
-                </ng-container>
-                <ng-container *ngIf="contactForm.get('message')?.errors?.['pattern']">
-                  {{ 'formato_invalido' | translate }}
-                </ng-container>
-              </div>
+                formControlName="message" required></textarea>
             </div>
 
             <div class="uk-width-1-1 uk-flex uk-flex-right">
@@ -137,17 +262,9 @@
                 <span *ngIf="isSending" uk-spinner></span>
               </button>
             </div>
-
-            <progress id="js-progressbar" class="uk-progress" value="0" max="100" hidden></progress>
           </form>
         </div>
       </div>
     </div>
   </div>
-  }
-  } @else {
-  <div class="uk-flex uk-flex-center uk-margin-large-top">
-    <div uk-spinner></div>
-  </div>
-  }
-</div>
+}

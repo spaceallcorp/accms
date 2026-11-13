@@ -1,21 +1,30 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Firestore, addDoc, collection, serverTimestamp } from '@angular/fire/firestore';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { EditorModule } from '@tinymce/tinymce-angular';
-
-import { TranslateService, TranslatePipe } from '@ngx-translate/core'; // Inserido
+import { TranslateService } from '@ngx-translate/core';
+import { Subscription } from 'rxjs';
+import { POST_COLLECTIONS, PostCollection } from '../../models/cms-site.model';
+import { CmsSiteService } from '../../services/cms-site.service';
 
 @Component({
   selector: 'app-artigo-postar',
   standalone: true,
-  // Adição de TranslatePipe aos imports
-  imports: [FormsModule, CommonModule, EditorModule,], // Inserido
+  imports: [FormsModule, CommonModule, EditorModule],
   templateUrl: './artigo-postar.component.html',
   styleUrls: ['./artigo-postar.component.css']
 })
-export class ArtigoPostarComponent {
+export class ArtigoPostarComponent implements OnInit, OnDestroy {
+  private firestore = inject(Firestore);
+  private router = inject(Router);
+  private translate = inject(TranslateService);
+  readonly cmsSiteService = inject(CmsSiteService);
+  private siteSub?: Subscription;
+
+  collections = POST_COLLECTIONS;
+  selectedCollection: PostCollection = 'posts';
 
   // Data models
   editorContent: string = '';
@@ -28,11 +37,12 @@ export class ArtigoPostarComponent {
 
   isSubmitting = false;
   errorMessage = '';
+  successMessage = '';
 
   // TinyMCE config
   editorConfig = {
-    height: 400,
-    menubar: true,
+    height: 260,
+    menubar: false,
     plugins: [
       'advlist', 'autolink', 'link', 'image', 'lists', 'charmap', 'preview', 'anchor', 'pagebreak',
       'searchreplace', 'wordcount', 'visualblocks', 'visualchars', 'code', 'fullscreen', 'insertdatetime',
@@ -44,17 +54,25 @@ export class ArtigoPostarComponent {
       'bullist numlist outdent indent | removeformat | help'
   };
 
-  private firestore = inject(Firestore);
-  private router = inject(Router);
-  private translate = inject(TranslateService); // Inserido
+  constructor() {
+    this.translate.setDefaultLang('pt');
+    this.translate.use(this.translate.currentLang || 'pt');
+  }
 
-  constructor() { // Construtor adicionado/modificado para incluir a lógica de tradução
-    this.translate.setDefaultLang('pt'); // Inserido
-    this.translate.use(this.translate.currentLang || 'pt'); // Inserido
+  ngOnInit(): void {
+    this.siteSub = this.cmsSiteService.activeSite$.subscribe(siteId => {
+      const siteConfig = this.cmsSiteService.getSiteConfig(siteId);
+      this.selectedCollection = siteConfig.collections.posts;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.siteSub?.unsubscribe();
   }
 
   async onSubmit() {
     this.errorMessage = '';
+    this.successMessage = '';
 
     if (!this.newPost.title.trim()) {
       this.errorMessage = 'O título é obrigatório.';
@@ -69,22 +87,28 @@ export class ArtigoPostarComponent {
     this.isSubmitting = true;
 
     try {
-      const postsCollection = collection(this.firestore, 'posts');
+      const targetCol = this.selectedCollection;
+      const postsCollection = collection(this.firestore, targetCol);
       await addDoc(postsCollection, {
         title: this.newPost.title,
         content: this.editorContent,
         author: this.newPost.author,
         imageUrl: this.featuredImageUrl || null,
+        collection: targetCol,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
 
       // Reset form
       this.newPost.title = '';
+      this.newPost.author = '';
       this.editorContent = '';
       this.featuredImageUrl = '';
-      this.router.navigate(['/']);
+      this.successMessage = `Artigo publicado com sucesso em "${targetCol}"!`;
 
+      if (!this.router.url.includes('dashboard')) {
+        this.router.navigate(['/']);
+      }
     } catch (error) {
       console.error('Erro ao salvar o artigo:', error);
       this.errorMessage = this.getFirestoreError(error);
@@ -100,7 +124,7 @@ export class ArtigoPostarComponent {
     return 'Falha ao salvar. Tente novamente.';
   }
 
-  useLanguage(language: string): void { // Inserido
-    this.translate.use(language); // Inserido
-  } // Inserido
+  useLanguage(language: string): void {
+    this.translate.use(language);
+  }
 }

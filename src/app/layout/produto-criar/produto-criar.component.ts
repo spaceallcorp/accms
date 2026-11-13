@@ -1,25 +1,19 @@
 import { Component, inject } from '@angular/core';
-import { Produto } from '../../models/products.model';
+import { CommonModule } from '@angular/common';
+import { Produto, ProdutoMetric } from '../../models/products.model';
 import {
   FormArray,
   FormBuilder,
-  FormGroup,
   ReactiveFormsModule,
   Validators,
-  
 } from '@angular/forms';
 import { ProductService } from '../../services/product.service';
-
-// Define the Metric type
-interface ProdutoMetric {
-  title: string;
-  value: string;
-}
 
 @Component({
   selector: 'app-produto-criar',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule
   ],
   templateUrl: './produto-criar.component.html',
@@ -28,16 +22,18 @@ interface ProdutoMetric {
 export class ProdutoCriarComponent {
   private fb = inject(FormBuilder);
   private productsService = inject(ProductService);
-  
-  loading = false;
 
-  // Fixed form definition - removed the invalid metrics declaration
+  loading = false;
+  activeLangTab: 'en' | 'pt' | 'fr' = 'en';
+  successMessage = '';
+  errorMessage = '';
+
   form = this.fb.group({
     name: ['', Validators.required],
     description: ['', Validators.required],
     descriptionPT: [''],
     descriptionFR: [''],
-    metrics: this.fb.array([]), // Fixed: was incorrectly declared
+    metrics: this.fb.array([]),
     features: this.fb.array([]),
     coverUrl: [''],
     featuredImageUrl: [''],
@@ -60,6 +56,19 @@ export class ProdutoCriarComponent {
     return this.form.get('features') as FormArray;
   }
 
+  setLangTab(lang: 'en' | 'pt' | 'fr'): void {
+    this.activeLangTab = lang;
+  }
+
+  hasLangContent(controlName: 'description' | 'descriptionPT' | 'descriptionFR'): boolean {
+    const val = this.form.get(controlName)?.value;
+    return typeof val === 'string' && val.trim().length > 0;
+  }
+
+  clearControl(controlName: string): void {
+    this.form.get(controlName)?.setValue('');
+  }
+
   /* =====================================================
      METRICS
   ===================================================== */
@@ -67,7 +76,7 @@ export class ProdutoCriarComponent {
   addMetric(): void {
     const metricGroup = this.fb.group({
       title: ['', Validators.required],
-      value: [0, Validators.required]
+      value: ['', Validators.required]
     });
     this.metrics.push(metricGroup);
   }
@@ -95,8 +104,15 @@ export class ProdutoCriarComponent {
   ===================================================== */
 
   async submit(): Promise<void> {
+    this.successMessage = '';
+    this.errorMessage = '';
+
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      if (this.form.get('description')?.invalid) {
+        this.activeLangTab = 'en';
+      }
+      this.errorMessage = 'Por favor preencha os campos obrigatórios (Nome e Descrição EN).';
       return;
     }
 
@@ -110,7 +126,7 @@ export class ProdutoCriarComponent {
       description: formValue.description || '',
       descriptionPT: formValue.descriptionPT || '',
       descriptionFR: formValue.descriptionFR || '',
-      metrics: (formValue.metrics || []) as ProdutoMetric[], // Fixed type
+      metrics: (formValue.metrics || []) as ProdutoMetric[],
       features: (formValue.features || []) as string[],
       coverUrl: formValue.coverUrl || '',
       featuredImageUrl: formValue.featuredImageUrl || '',
@@ -123,10 +139,14 @@ export class ProdutoCriarComponent {
 
     try {
       await this.productsService.createProduct(product);
-      console.log('Produto criado com sucesso');
       this.resetForm();
+      this.successMessage = 'Produto adicionado com sucesso ao catálogo global.';
+      setTimeout(() => {
+        this.successMessage = '';
+      }, 4500);
     } catch (err) {
       console.error('Erro ao criar produto:', err);
+      this.errorMessage = 'Ocorreu um erro ao guardar o produto. Tente novamente.';
     } finally {
       this.loading = false;
     }
@@ -151,14 +171,14 @@ export class ProdutoCriarComponent {
       productCategory: ''
     });
 
-    // Clear metrics array
     while (this.metrics.length) {
       this.metrics.removeAt(0);
     }
 
-    // Clear features array
     while (this.features.length) {
       this.features.removeAt(0);
     }
+
+    this.activeLangTab = 'en';
   }
 }

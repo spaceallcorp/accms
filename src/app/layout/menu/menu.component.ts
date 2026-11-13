@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '@auth0/auth0-angular';
+import { AuthService } from '../../services/auth.service';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -30,14 +30,7 @@ export class MenuComponent implements OnInit {
 
   ngOnInit(): void {
     this.preloadFlags();
-    this.auth.isAuthenticated$.subscribe(isAuthenticated => {
-      if (isAuthenticated) {
-        this.router.navigate(['/painel']);
-        console.log('Usuário Autenticado');
-      } else {
-        console.log('Usuário Não Autenticado');
-      }
-    });
+    // No auto-redirect on public menu component
   }
 
   useLanguage(language: string): void {
@@ -70,7 +63,7 @@ export class MenuComponent implements OnInit {
     this.cdr.detectChanges();
   }
   login(): void {
-    this.auth.loginWithRedirect();
+    this.auth.loginWithGoogle();
   }
 
   logout(): void {
